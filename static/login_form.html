@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="kr">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link href="/static/form.css" rel="stylesheet">
+</head>
+<body>
+<div class="wrapped">
+    <h1>SKKU Talk</h1>
+    <form class="form" method="post" action="">
+        <input class="text-input" name="login_id" type="text" placeholder="id" value="user">
+        <input class="text-input" name="password" type="password" placeholder="password" value="user">
+        <button class="long-button main-button" type="submit">Login</button>
+    </form>
+
+    <form class="form" action="/users">
+        <button class="long-button sub-button" type="submit">Register</button>
+    </form>
+</div>
+</body>
+</html>
