@@ -2,6 +2,7 @@ from uuid import uuid4 as uuid
 
 from sqlmodel import Session, select
 
+from domain.friend_relation import FriendRelation
 from domain.user import User
 from domain.user_session import UserSession
 from exception.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
@@ -42,3 +43,13 @@ def find_by_session_id(session: Session, session_id: str) -> User:
     if not user_session:
         raise SessionNotFoundException(session_id)
     return user_session.user
+
+
+def add_friend_relation(session: Session, user: User, friend: User):
+    session.add(FriendRelation(user=user, friend=friend))
+    session.commit()
+
+
+def find_friends(session: Session, user: User) -> list:
+    friends = session.exec(select(FriendRelation).where(FriendRelation.user == user)).all()
+    return list(map(lambda x: x.friend, friends))

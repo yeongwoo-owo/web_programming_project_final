@@ -1,12 +1,4 @@
-html body {
-    width: 100%;
-    margin: 0;
-    padding: 0;
-}
-
-.wrapped {
-    width: 80%;
-    margin: 10%;
+.wrapper {
     text-align: center;
     horiz-align: center;
 }

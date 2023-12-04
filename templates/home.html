@@ -3,9 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
+    <link href="/static/global.css" rel="stylesheet">
+    <link href="/static/home.css" rel="stylesheet">
 </head>
 <body>
-<h1>친구 목록</h1>
-{{ user.name }}
+<div class="wrapper">
+    <h1>{{ user.name }}</h1>
+
+    <div class="horizontal_wrapper">
+        <h2>친구 목록</h2>
+        <form method="get" action="/friends">
+            <button type="submit">친구 추가</button>
+        </form>
+    </div>
+
+    {% for friend in friends %}
+    <p>{{ friend.name }}</p>
+    {% endfor %}
+</div>
 </body>
 </html>

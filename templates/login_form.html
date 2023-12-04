@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
+    <link href="/static/global.css" rel="stylesheet">
     <link href="/static/form.css" rel="stylesheet">
 </head>
 <body>
-<div class="wrapped">
+<div class="wrapper">
     <h1>SKKU Talk</h1>
 
-    <form class="form" method="post" action="">
+    <form class="form vertical-flex" method="post" action="">
         <input class="text-input" name="login_id" type="text" placeholder="id" value="user">
         <input class="text-input" name="password" type="password" placeholder="password" value="user">
         {% if error %}
@@ -18,7 +19,7 @@
         <button class="long-button main-button" type="submit">Login</button>
     </form>
 
-    <form class="form" action="/register">
+    <form class="form vertical-flex" action="/register">
         <button class="long-button sub-button" type="submit">Register</button>
     </form>
 </div>

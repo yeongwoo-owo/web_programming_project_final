@@ -9,7 +9,8 @@ from sqlmodel import SQLModel, Session, select
 from sqlmodel import create_engine
 from starlette.datastructures import MutableHeaders
 
-from crud.user import create_user, login_user, find_by_session_id, find_by_id
+from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends
+from domain.friend_relation import FriendRelation
 from domain.user import User
 from domain.user_session import UserSession
 from exception.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
@@ -34,7 +35,15 @@ def setup():
             session.delete(user)
         for user_session in session.exec(select(UserSession)).all():
             session.delete(user_session)
+        for friend in session.exec(select(FriendRelation)).all():
+            session.delete(friend)
         session.commit()
+
+        user = create_user(session, "user", "user", "user")
+        userA = create_user(session, "userA", "userA", "userA")
+        userB = create_user(session, "userB", "userB", "userB")
+        add_friend_relation(session, user, userA)
+        add_friend_relation(session, user, userB)
 
 
 # TODO: PRG 적용
@@ -121,7 +130,13 @@ def home(request: Request,
          user_id: Annotated[int | None, Header()],
          session: Session = Depends(session)):
     user = find_by_id(session, user_id)
-    return templates.TemplateResponse("home.html", {"request": request, "user": user})
+    friends = find_friends(session, user)
+    return templates.TemplateResponse("home.html", {"request": request, "user": user, "friends": friends})
+
+
+@app.get("/friends")
+def add_friend(request: Request):
+    return templates.TemplateResponse("add_friend.html", {"request": request})
 
 
 if __name__ == "__main__":
