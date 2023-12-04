@@ -42,8 +42,10 @@ def setup():
         user = create_user(session, "user", "user", "user")
         userA = create_user(session, "userA", "userA", "userA")
         userB = create_user(session, "userB", "userB", "userB")
+        userC = create_user(session, "userC", "userC", "userC")
         add_friend_relation(session, user, userA)
         add_friend_relation(session, user, userB)
+        add_friend_relation(session, user, userC)
 
 
 # TODO: PRG 적용
@@ -131,12 +133,7 @@ def home(request: Request,
          session: Session = Depends(session)):
     user = find_by_id(session, user_id)
     friends = find_friends(session, user)
-    return templates.TemplateResponse("home.html", {"request": request, "user": user, "friends": friends})
-
-
-@app.get("/friends")
-def add_friend(request: Request):
-    return templates.TemplateResponse("add_friend.html", {"request": request})
+    return templates.TemplateResponse("home.html", {"request": request, "user": user, "friends": friends, "tab": "home"})
 
 
 if __name__ == "__main__":

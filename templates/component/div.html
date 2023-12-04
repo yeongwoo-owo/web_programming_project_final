@@ -1,0 +1,16 @@
+<div class="bg-secondary" style="width: 80px">
+    <div class="mt-5 ms-3 text-center">
+        <form action="/">
+            <button class="btn btn-link w-75 p-0 {% if tab == 'home' %}disabled{% endif %}">
+                <img class="w-100" src="/static/icon/person.fill.svg">
+            </button>
+        </form>
+    </div>
+    <div class="mt-5 ms-3 text-center">
+        <form action="/chats">
+            <button class="btn btn-link w-75 p-0 {% if tab == 'chat' %}disabled{% endif %}">
+                <img class="w-100" src="/static/icon/bubble.fill.svg">
+            </button>
+        </form>
+    </div>
+</div>

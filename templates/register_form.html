@@ -1,22 +1,21 @@
 <!DOCTYPE html>
-<html lang="kr">
+<html lang="kr" class="bg-dark">
 <head>
     <meta charset="UTF-8">
     <title>Register</title>
-    <link href="/static/global.css" rel="stylesheet">
-    <link href="/static/form.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/bootstrap.min.css">
 </head>
-<body>
-<div class="wrapper">
-    <h1>SKKU Talk</h1>
-    <form class="form vertical-flex" method="post" action="">
-        <input class="text-input" name="name" type="text" placeholder="name" value="user">
-        <input class="text-input" name="login_id" type="text" placeholder="id" value="user">
-        <input class="text-input" name="password" type="password" placeholder="password" value="user">
+<body class="bg-dark align-self-center">
+<div class="container mt-5">
+    <h1 class="text-center text-light mb-5">SKKU Talk</h1>
+    <form class="align-middle" method="post" action="">
+        <input class="form-control mb-3" name="name" type="text" placeholder="name" value="user">
+        <input class="form-control mb-3" name="login_id" type="text" placeholder="id" value="user">
+        <input class="form-control mb-3" name="password" type="password" placeholder="password" value="user">
         {% if error %}
-        <p class="error-message">{{ error }}</p>
+        <p class="mb-3 text-danger">{{ error }}</p>
         {% endif %}
-        <button class="long-button main-button" type="submit">Register</button>
+        <button class="btn btn-warning mb-3 w-100" type="submit">Register</button>
     </form>
 </div>
 </body>

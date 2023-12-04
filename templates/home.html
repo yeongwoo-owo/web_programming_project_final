@@ -1,25 +1,29 @@
 <!DOCTYPE html>
-<html lang="kr">
+<html lang="kr" class="bg-dark w-100 h-100">
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
-    <link href="/static/global.css" rel="stylesheet">
-    <link href="/static/home.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/bootstrap.min.css">
 </head>
-<body>
-<div class="wrapper">
-    <h1>{{ user.name }}</h1>
+<body class="bg-dark col w-100 h-100">
+<div class="row w-100 h-100">
+    {% include "component/div.html" %}
+    <div class="col m-3 mt-5">
+        <h1 class="text-light">{{ user.name }}</h1>
 
-    <div class="horizontal_wrapper">
-        <h2>친구 목록</h2>
-        <form method="get" action="/friends">
-            <button type="submit">친구 추가</button>
-        </form>
+        <div class="row justify-content-between mt-5">
+            <h2 class="col text-light">친구</h2>
+            <form style="width: 120px" class="text-end align-self-center" method="get" action="/friends/add">
+                <button class="btn btn-light" type="submit">친구 추가</button>
+            </form>
+        </div>
+
+        <hr class="text-light mt-3">
+        {% for friend in friends %}
+        <a href="#" class="btn w-100 text-start p-1"><p class="text-light fs-3 m-0">{{ friend.name }}</p></a>
+        <hr class="text-light">
+        {% endfor %}
     </div>
-
-    {% for friend in friends %}
-    <p>{{ friend.name }}</p>
-    {% endfor %}
 </div>
 </body>
 </html>
