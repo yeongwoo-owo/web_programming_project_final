@@ -32,6 +32,10 @@ def login_user(session: Session, login_id: str, password: str) -> User:
     return user
 
 
+def find_by_id(session: Session, user_id: int) -> User:
+    return session.exec(select(User).where(User.id == user_id)).first()
+
+
 def find_by_session_id(session: Session, session_id: str) -> User | None:
     user_session = session.exec(select(UserSession).where(UserSession.session_id == session_id)).first()
     if not user_session:

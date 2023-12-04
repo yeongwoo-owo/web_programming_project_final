@@ -1,14 +1,15 @@
 from typing import Annotated
 
 import uvicorn
-from fastapi import FastAPI, Depends, Form, Request, Cookie
+from fastapi import FastAPI, Depends, Form, Request, Header
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import SQLModel, Session, select
 from sqlmodel import create_engine
+from starlette.datastructures import MutableHeaders
 
-from crud.user import create_user, login_user, find_by_session_id
+from crud.user import create_user, login_user, find_by_session_id, find_by_id
 from domain.user import User
 from domain.user_session import UserSession
 
@@ -35,12 +36,47 @@ def setup():
         session.commit()
 
 
-@app.get("/users")
+def update_header(request: Request, key, value):
+    header = MutableHeaders(request._headers)
+    header[key] = str(value)
+    request._headers = header
+    request.scope.update(headers=request._headers.raw)
+    return request
+
+
+def is_whitelist(path):
+    whitelist = ["/login", "/register", "/static"]
+    for url in whitelist:
+        if path.startswith(url):
+            return True
+    return False
+
+
+@app.middleware("http")
+async def authentication_filter(request: Request, call_next):
+    path = request.url.path
+
+    if not is_whitelist(path):
+        if "session_id" not in request.cookies:
+            return RedirectResponse(url="/login", status_code=302)
+
+        with Session(engine) as session:
+            session_id = request.cookies["session_id"]
+            user = find_by_session_id(session, session_id)
+            if not user:
+                return RedirectResponse(url="/login", status_code=302)
+
+            request = update_header(request, key="user-id", value=user.id)
+
+    return await call_next(request)
+
+
+@app.get("/register")
 def register_user_form():
     return FileResponse("static/register_form.html")
 
 
-@app.post("/users")
+@app.post("/register")
 def register_user(name: str = Form(),
                   login_id: str = Form(),
                   password: str = Form(),
@@ -66,11 +102,9 @@ def login(login_id: str = Form(), password: str = Form(), session: Session = Dep
 
 @app.get("/")
 def home(request: Request,
-         session_id: Annotated[str | None, Cookie()],
+         user_id: Annotated[int | None, Header()],
          session: Session = Depends(session)):
-    user = find_by_session_id(session, session_id)
-    if not user:
-        return RedirectResponse(url="/login", status_code=302)
+    user = find_by_id(session, user_id)
     return templates.TemplateResponse("home.html", {"request": request, "user": user})
 
 
