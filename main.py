@@ -37,6 +37,17 @@ def setup():
         session.commit()
 
 
+# TODO: PRG 적용
+@app.exception_handler(DuplicateUserException)
+def login_exception_handler(request: Request, error: DuplicateUserException):
+    return templates.TemplateResponse("register_form.html", {"request": request, "error": error.description()})
+
+
+@app.exception_handler(LoginException)
+def login_exception_handler(request: Request, error: LoginException):
+    return templates.TemplateResponse("login_form.html", {"request": request, "error": error.description()})
+
+
 def update_header(request: Request, key, value):
     header = MutableHeaders(request._headers)
     header[key] = str(value)
@@ -80,20 +91,14 @@ def register_user_form(request: Request):
 
 
 @app.post("/register")
-def register_user(request: Request,
-                  name: str = Form(),
+def register_user(name: str = Form(),
                   login_id: str = Form(),
                   password: str = Form(),
                   session: Session = Depends(session)):
-    try:
-        user = create_user(session, name=name, login_id=login_id, password=password)
-        response = RedirectResponse(url="/", status_code=302)
-        response.set_cookie(key="session_id", value=user.session.session_id)
-        return response
-    except DuplicateUserException as e:
-        print(e)
-        # TODO: PRG 적용
-        return templates.TemplateResponse("register_form.html", {"request": request, "error": e.description()})
+    user = create_user(session, name=name, login_id=login_id, password=password)
+    response = RedirectResponse(url="/", status_code=302)
+    response.set_cookie(key="session_id", value=user.session.session_id)
+    return response
 
 
 @app.get("/login")
@@ -102,19 +107,13 @@ def login_user_form(request: Request):
 
 
 @app.post("/login")
-def login(request: Request,
-          login_id: str = Form(),
+def login(login_id: str = Form(),
           password: str = Form(),
           session: Session = Depends(session)):
-    try:
-        user = login_user(session, login_id, password)
-        response = RedirectResponse(url="/", status_code=302)
-        response.set_cookie(key="session_id", value=user.session.session_id)
-        return response
-    except LoginException as e:
-        print(e)
-        # TODO: PRG 적용
-        return templates.TemplateResponse("login_form.html", {"request": request, "error": e.description()})
+    user = login_user(session, login_id, password)
+    response = RedirectResponse(url="/", status_code=302)
+    response.set_cookie(key="session_id", value=user.session.session_id)
+    return response
 
 
 @app.get("/")
