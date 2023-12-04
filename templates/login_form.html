@@ -8,9 +8,13 @@
 <body>
 <div class="wrapped">
     <h1>SKKU Talk</h1>
+
     <form class="form" method="post" action="">
         <input class="text-input" name="login_id" type="text" placeholder="id" value="user">
         <input class="text-input" name="password" type="password" placeholder="password" value="user">
+        {% if error %}
+        <p class="error-message">{{ error }}</p>
+        {% endif %}
         <button class="long-button main-button" type="submit">Login</button>
     </form>
 

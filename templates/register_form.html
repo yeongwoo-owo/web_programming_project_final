@@ -12,6 +12,9 @@
         <input class="text-input" name="name" type="text" placeholder="name" value="user">
         <input class="text-input" name="login_id" type="text" placeholder="id" value="user">
         <input class="text-input" name="password" type="password" placeholder="password" value="user">
+        {% if error %}
+        <p class="error-message">{{ error }}</p>
+        {% endif %}
         <button class="long-button main-button" type="submit">Register</button>
     </form>
 </div>

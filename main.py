@@ -2,7 +2,7 @@ from typing import Annotated
 
 import uvicorn
 from fastapi import FastAPI, Depends, Form, Request, Header
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import SQLModel, Session, select
@@ -12,6 +12,7 @@ from starlette.datastructures import MutableHeaders
 from crud.user import create_user, login_user, find_by_session_id, find_by_id
 from domain.user import User
 from domain.user_session import UserSession
+from exception.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
@@ -45,7 +46,7 @@ def update_header(request: Request, key, value):
 
 
 def is_whitelist(path):
-    whitelist = ["/login", "/register", "/static"]
+    whitelist = ["/login", "/register", "/static", "/favicon.ico"]
     for url in whitelist:
         if path.startswith(url):
             return True
@@ -58,46 +59,62 @@ async def authentication_filter(request: Request, call_next):
 
     if not is_whitelist(path):
         if "session_id" not in request.cookies:
+            print("세션이 존재하지 않습니다.")
             return RedirectResponse(url="/login", status_code=302)
 
-        with Session(engine) as session:
-            session_id = request.cookies["session_id"]
-            user = find_by_session_id(session, session_id)
-            if not user:
-                return RedirectResponse(url="/login", status_code=302)
-
-            request = update_header(request, key="user-id", value=user.id)
+        try:
+            with Session(engine) as session:
+                session_id = request.cookies["session_id"]
+                user = find_by_session_id(session, session_id)
+                request = update_header(request, key="user-id", value=user.id)
+        except SessionNotFoundException as e:
+            print(e)
+            return RedirectResponse(url="/login", status_code=302)
 
     return await call_next(request)
 
 
 @app.get("/register")
-def register_user_form():
-    return FileResponse("static/register_form.html")
+def register_user_form(request: Request):
+    return templates.TemplateResponse("register_form.html", {"request": request})
 
 
 @app.post("/register")
-def register_user(name: str = Form(),
+def register_user(request: Request,
+                  name: str = Form(),
                   login_id: str = Form(),
                   password: str = Form(),
                   session: Session = Depends(session)):
-    user = create_user(session, name=name, login_id=login_id, password=password)
-    response = RedirectResponse(url="/", status_code=302)
-    response.set_cookie(key="session_id", value=user.session.session_id)
-    return response
+    try:
+        user = create_user(session, name=name, login_id=login_id, password=password)
+        response = RedirectResponse(url="/", status_code=302)
+        response.set_cookie(key="session_id", value=user.session.session_id)
+        return response
+    except DuplicateUserException as e:
+        print(e)
+        # TODO: PRG 적용
+        return templates.TemplateResponse("register_form.html", {"request": request, "error": e.description()})
 
 
 @app.get("/login")
-def login_user_form():
-    return FileResponse("static/login_form.html")
+def login_user_form(request: Request):
+    return templates.TemplateResponse("login_form.html", {"request": request})
 
 
 @app.post("/login")
-def login(login_id: str = Form(), password: str = Form(), session: Session = Depends(session)):
-    user = login_user(session, login_id, password)
-    response = RedirectResponse(url="/", status_code=302)
-    response.set_cookie(key="session_id", value=user.session.session_id)
-    return response
+def login(request: Request,
+          login_id: str = Form(),
+          password: str = Form(),
+          session: Session = Depends(session)):
+    try:
+        user = login_user(session, login_id, password)
+        response = RedirectResponse(url="/", status_code=302)
+        response.set_cookie(key="session_id", value=user.session.session_id)
+        return response
+    except LoginException as e:
+        print(e)
+        # TODO: PRG 적용
+        return templates.TemplateResponse("login_form.html", {"request": request, "error": e.description()})
 
 
 @app.get("/")
