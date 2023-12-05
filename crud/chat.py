@@ -14,19 +14,19 @@ def create_chatroom(session: Session, members: list, name: str = "") -> ChatRoom
     return chatroom
 
 
-def find_chat_rooms_by_user(session: Session, user: User) -> list:
-    chat_room_members = session.exec(select(ChatRoomMember).where(ChatRoomMember.member == user)).all()
-    return list(map(lambda x: set_chatroom_name(x.chatroom, user), chat_room_members))
+def find_chatrooms_by_user(session: Session, user: User) -> list:
+    chatroom_members = session.exec(select(ChatRoomMember).where(ChatRoomMember.member == user)).all()
+    return list(map(lambda x: set_chatroom_name(x.chatroom, user), chatroom_members))
 
 
 def find_or_create_single_chatroom(session: Session, user: User, other: User) -> ChatRoom:
     chatrooms = list(session.exec(select(ChatRoom)).all())
     for chatroom in chatrooms:
-        chat_room_members = list(map(lambda x: x.member, chatroom.members))
-        if len(chat_room_members) != 2:
+        chatroom_members = list(map(lambda x: x.member, chatroom.members))
+        if len(chatroom_members) != 2:
             continue
 
-        if user in chat_room_members and other in chat_room_members:
+        if user in chatroom_members and other in chatroom_members:
             return chatroom
 
     return create_chatroom(session, [user, other])

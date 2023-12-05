@@ -12,7 +12,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_201_CREATED
 
-from crud.chat import create_chatroom, find_chat_rooms_by_user, find_or_create_single_chatroom, find_chatroom_by_id
+from crud.chat import create_chatroom, find_chatrooms_by_user, find_or_create_single_chatroom, find_chatroom_by_id
 from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends, \
     find_by_name
 from domain.ChatRoom import ChatRoomMember, ChatRoom
@@ -186,11 +186,11 @@ def search_users(user_id: Annotated[int | None, Header()],
 
 
 @app.get("/chats")
-def get_chat_rooms(request: Request,
+def get_chatrooms(request: Request,
                    user_id: Annotated[int | None, Header()],
                    session: Session = Depends(session)):
     user = find_by_id(session, user_id)
-    chatrooms = find_chat_rooms_by_user(session, user)
+    chatrooms = find_chatrooms_by_user(session, user)
     return templates.TemplateResponse("chatroom_list.html", {"request": request, "chatrooms": chatrooms})
 
 
