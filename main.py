@@ -12,8 +12,10 @@ from starlette.datastructures import MutableHeaders
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_201_CREATED
 
+from crud.chat import create_chat, find_chat_rooms_by_user
 from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends, \
     find_by_name
+from domain.ChatRoom import ChatRoomMember, ChatRoom
 from domain.friend_relation import FriendRelation
 from domain.user import User
 from domain.user_session import UserSession
@@ -41,14 +43,28 @@ def setup():
             session.delete(user_session)
         for friend in session.exec(select(FriendRelation)).all():
             session.delete(friend)
+        for member in session.exec(select(ChatRoomMember)).all():
+            session.delete(member)
+        for room in session.exec(select(ChatRoom)).all():
+            session.delete(room)
         session.commit()
 
-        user = create_user(session, "user", "user", "user")
+        user = create_user(session, "유저", "user", "user")
         for i in range(1, 21):
             s = "user" + str(i)
-            u = create_user(session, s, s, s)
+            name = "유저" + str(i)
+            u = create_user(session, name, s, s)
             if i % 2 == 0:
                 add_friend_relation(session, user, u)
+                if i % 3 == 0:
+                    create_chat(session, members=[user, u])
+        userA = create_user(session, "유저A", "userA", "userA")
+        userB = create_user(session, "유저B", "userB", "userB")
+        userC = create_user(session, "유저C", "userC", "userC")
+        add_friend_relation(session, user, userA)
+        add_friend_relation(session, user, userB)
+        add_friend_relation(session, user, userC)
+        create_chat(session, [user, userA, userB, userC])
 
 
 # TODO: PRG 적용
@@ -165,6 +181,15 @@ def search_users(user_id: Annotated[int | None, Header()],
         users.remove(user)
     users = sorted(list(map(lambda x: {"user": x, "is_friend": x in friends}, users)), key=lambda x: x["is_friend"])
     return JSONResponse({"result": jsonable_encoder(users)})
+
+
+@app.get("/chats")
+def get_chat_rooms(request: Request,
+                   user_id: Annotated[int | None, Header()],
+                   session: Session = Depends(session)):
+    user = find_by_id(session, user_id)
+    chatrooms = find_chat_rooms_by_user(session, user)
+    return templates.TemplateResponse("chatroom_list.html", {"request": request, "chatrooms": chatrooms})
 
 
 if __name__ == "__main__":

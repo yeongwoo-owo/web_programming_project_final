@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko" class="bg-dark w-100 h-100">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="/static/bootstrap.min.css">
+    <title>Chatting</title>
+</head>
+<body class="bg-dark col w-100">
+<div class="row w-100 h-100">
+    {% include "component/div.html" %}
+
+    <div class="col m-3 mt-5">
+        <h1 class="text-light mb-5">채팅</h1>
+
+        {% for chatroom in chatrooms %}
+        <a href="#" class="btn w-100 text-start p-1">
+            <div class="row justify-content-between align-items-center">
+                <p class="text-light fs-3 m-0 mb-3 w-75">{{ chatroom.name }}</p>
+                <p class="text-light col" style="max-width: fit-content">오후 7:28</p>
+            </div>
+            <div class="row justify-content-between align-items-center">
+                <p class="text-light w-75 mb-0">최근 채팅</p>
+                <p class="badge text-bg-danger mb-0 me-3" style="max-width: fit-content">2</p>
+            </div>
+        </a>
+        <hr class="text-light m-1">
+        {% endfor %}
+    </div>
+</div>
+</body>
+</html>
