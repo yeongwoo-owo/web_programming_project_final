@@ -1,15 +1,19 @@
 from typing import Annotated
 
 import uvicorn
-from fastapi import FastAPI, Depends, Form, Request, Header
+from fastapi import FastAPI, Depends, Form, Request, Header, Path
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import SQLModel, Session, select
 from sqlmodel import create_engine
 from starlette.datastructures import MutableHeaders
+from starlette.responses import JSONResponse
+from starlette.status import HTTP_201_CREATED
 
-from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends
+from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends, \
+    find_by_name
 from domain.friend_relation import FriendRelation
 from domain.user import User
 from domain.user_session import UserSession
@@ -40,12 +44,11 @@ def setup():
         session.commit()
 
         user = create_user(session, "user", "user", "user")
-        userA = create_user(session, "userA", "userA", "userA")
-        userB = create_user(session, "userB", "userB", "userB")
-        userC = create_user(session, "userC", "userC", "userC")
-        add_friend_relation(session, user, userA)
-        add_friend_relation(session, user, userB)
-        add_friend_relation(session, user, userC)
+        for i in range(1, 21):
+            s = "user" + str(i)
+            u = create_user(session, s, s, s)
+            if i % 2 == 0:
+                add_friend_relation(session, user, u)
 
 
 # TODO: PRG 적용
@@ -133,7 +136,35 @@ def home(request: Request,
          session: Session = Depends(session)):
     user = find_by_id(session, user_id)
     friends = find_friends(session, user)
-    return templates.TemplateResponse("home.html", {"request": request, "user": user, "friends": friends, "tab": "home"})
+    return templates.TemplateResponse("home.html",
+                                      {"request": request, "user": user, "friends": friends, "tab": "home"})
+
+
+@app.get("/friends")
+def add_friend_form(request: Request):
+    return templates.TemplateResponse("add_friend.html", {"request": request})
+
+
+@app.post("/friends/{friend_id}", status_code=HTTP_201_CREATED)
+def add_friend(user_id: Annotated[int | None, Header()],
+               friend_id: Annotated[int | None, Path()],
+               session: Session = Depends(session)):
+    user = find_by_id(session, user_id)
+    friend = find_by_id(session, friend_id)
+    add_friend_relation(session, user, friend)
+
+
+@app.get("/users")
+def search_users(user_id: Annotated[int | None, Header()],
+                 query: str = "",
+                 session: Session = Depends(session)):
+    users = find_by_name(session, query)
+    user = find_by_id(session, user_id)
+    friends = find_friends(session, user)
+    if user in users:
+        users.remove(user)
+    users = sorted(list(map(lambda x: {"user": x, "is_friend": x in friends}, users)), key=lambda x: x["is_friend"])
+    return JSONResponse({"result": jsonable_encoder(users)})
 
 
 if __name__ == "__main__":

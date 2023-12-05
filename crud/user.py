@@ -38,6 +38,10 @@ def find_by_id(session: Session, user_id: int) -> User:
     return session.exec(select(User).where(User.id == user_id)).first()
 
 
+def find_by_name(session: Session, user_name: str) -> list:
+    return list(session.exec(select(User).where(User.name.contains(user_name))).all())
+
+
 def find_by_session_id(session: Session, session_id: str) -> User:
     user_session = session.exec(select(UserSession).where(UserSession.session_id == session_id)).first()
     if not user_session:
@@ -52,4 +56,4 @@ def add_friend_relation(session: Session, user: User, friend: User):
 
 def find_friends(session: Session, user: User) -> list:
     friends = session.exec(select(FriendRelation).where(FriendRelation.user == user)).all()
-    return list(map(lambda x: x.friend, friends))
+    return sorted(list(map(lambda x: x.friend, friends)), key=lambda x: x.name)
