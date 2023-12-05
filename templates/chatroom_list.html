@@ -10,12 +10,17 @@
     {% include "component/div.html" %}
 
     <div class="col m-3 mt-5">
-        <h1 class="text-light mb-5">채팅</h1>
+        <div class="row justify-content-between mb-5">
+            <h2 class="col text-light">채팅</h2>
+            <form style="width: 120px" class="text-end align-self-center" method="get" action="#">
+                <button class="btn btn-light" type="submit">그룹 채팅</button>
+            </form>
+        </div>
 
         {% for chatroom in chatrooms %}
-        <a href="#" class="btn w-100 text-start p-1">
+        <a href="/chats/{{ chatroom.id }}" class="btn w-100 text-start p-1">
             <div class="row justify-content-between align-items-center">
-                <p class="text-light fs-3 m-0 mb-3 w-75">{{ chatroom.name }}</p>
+                <p class="text-light fs-3 m-0 mb-3 w-75 overflow-hidden" style="white-space: nowrap">{{ chatroom.name }}</p>
                 <p class="text-light col" style="max-width: fit-content">오후 7:28</p>
             </div>
             <div class="row justify-content-between align-items-center">

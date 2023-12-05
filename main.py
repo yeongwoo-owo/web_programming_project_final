@@ -12,7 +12,7 @@ from starlette.datastructures import MutableHeaders
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_201_CREATED
 
-from crud.chat import create_chat, find_chat_rooms_by_user
+from crud.chat import create_chatroom, find_chat_rooms_by_user, find_or_create_single_chatroom, find_chatroom_by_id
 from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends, \
     find_by_name
 from domain.ChatRoom import ChatRoomMember, ChatRoom
@@ -57,14 +57,16 @@ def setup():
             if i % 2 == 0:
                 add_friend_relation(session, user, u)
                 if i % 3 == 0:
-                    create_chat(session, members=[user, u])
+                    create_chatroom(session, members=[user, u])
         userA = create_user(session, "유저A", "userA", "userA")
         userB = create_user(session, "유저B", "userB", "userB")
         userC = create_user(session, "유저C", "userC", "userC")
+        userD = create_user(session, "유저D", "userD", "userD")
+        userE = create_user(session, "유저E", "userE", "userE")
         add_friend_relation(session, user, userA)
         add_friend_relation(session, user, userB)
         add_friend_relation(session, user, userC)
-        create_chat(session, [user, userA, userB, userC])
+        create_chatroom(session, [user, userA, userB, userC, userD, userE])
 
 
 # TODO: PRG 적용
@@ -190,6 +192,27 @@ def get_chat_rooms(request: Request,
     user = find_by_id(session, user_id)
     chatrooms = find_chat_rooms_by_user(session, user)
     return templates.TemplateResponse("chatroom_list.html", {"request": request, "chatrooms": chatrooms})
+
+
+@app.get("/chats/{chat_id}")
+def get_chatroom(request: Request,
+                 user_id: Annotated[int | None, Header()],
+                 chat_id: Annotated[int | None, Path()],
+                 session: Session = Depends(session)):
+    user = find_by_id(session, user_id)
+    chatroom = find_chatroom_by_id(session, chat_id, user)
+    return templates.TemplateResponse("chatroom.html", {"request": request, "chatroom": chatroom})
+
+
+@app.get("/single-chats/{friend_id}")
+def get_single_chat(request: Request,
+                    user_id: Annotated[int | None, Header()],
+                    friend_id: Annotated[int | None, Path()],
+                    session: Session = Depends(session)):
+    user = find_by_id(session, user_id)
+    friend = find_by_id(session, friend_id)
+    chatroom = find_or_create_single_chatroom(session, user, friend)
+    return RedirectResponse("/chats/" + str(chatroom.id), status_code=302)
 
 
 if __name__ == "__main__":

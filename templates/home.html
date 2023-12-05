@@ -21,7 +21,7 @@
         <hr class="text-light mt-3">
         <div class="">
             {% for friend in friends %}
-            <a href="#" class="btn w-100 text-start p-1"><p class="text-light fs-3 m-0">{{ friend.name }}</p></a>
+            <a href="/single-chats/{{ friend.id }}" class="btn w-100 text-start p-1"><p class="text-light fs-3 m-0">{{ friend.name }}</p></a>
             <hr class="text-light">
             {% endfor %}
         </div>
