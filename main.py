@@ -11,7 +11,7 @@ from sqlmodel import create_engine
 from starlette.datastructures import MutableHeaders
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_201_CREATED
-from starlette.websockets import WebSocket
+from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from crud.chat import create_text_chat, find_chats_by_chatroom, find_recent_chat_by_chatroom
 from crud.chatroom import create_chatroom, find_chatrooms_by_user, find_or_create_single_chatroom, find_chatroom_by_id
@@ -62,8 +62,6 @@ def setup():
             u = create_user(session, name, s, s)
             if i % 2 == 0:
                 add_friend_relation(session, user, u)
-                if i % 3 == 0:
-                    create_chatroom(session, members=[user, u])
         userA = create_user(session, "유저A", "userA", "userA")
         userB = create_user(session, "유저B", "userB", "userB")
         userC = create_user(session, "유저C", "userC", "userC")
@@ -277,6 +275,8 @@ async def ws_connect(ws: WebSocket, session: Session = Depends(session)):
             chat = jsonable_encoder(create_text_chat(session, chatroom, writer, data["text"]))
             chat['writer'] = find_by_id(session, writer.id)
             await manager.broadcast(jsonable_encoder(chat))
+    except WebSocketDisconnect as e:
+        print(e)
     finally:
         await manager.disconnect(ws)
 
