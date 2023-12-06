@@ -1,31 +1,30 @@
 <!DOCTYPE html>
-<html lang="kr" class="bg-dark w-100 h-100">
+<html lang="ko" class="bg-dark" style="height: 100%">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
     <link rel="stylesheet" href="/static/bootstrap.min.css">
+    <title>Home</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
-<body class="bg-dark col w-100 h-100">
-<div class="row w-100 h-100">
-    {% include "component/div.html" %}
-    <div class="col m-3 mt-5">
-        <h1 class="text-light">{{ user.name }}</h1>
-
-        <div class="row justify-content-between mt-5">
-            <h2 class="col text-light">친구</h2>
-            <form style="width: 120px" class="text-end align-self-center" method="get" action="/friends">
-                <button class="btn btn-light" type="submit">친구 추가</button>
-            </form>
-        </div>
-
-        <hr class="text-light mt-3">
-        <div class="">
-            {% for friend in friends %}
-            <a href="/single-chats/{{ friend.id }}" class="btn w-100 text-start p-1"><p class="text-light fs-3 m-0">{{ friend.name }}</p></a>
-            <hr class="text-light">
-            {% endfor %}
-        </div>
+<body class="bg-dark" style="height: 100%">
+{% include "component/div.html" %}
+<div class="bg-dark align-items-center m-0 p-3"
+     style="position: fixed; left: 80px; width: calc(100% - 80px); height: 120px; z-index: 1">
+    <h1 class="text-light">{{ user.name }}</h1>
+    <div class="row justify-content-between align-items-center">
+        <h3 class="col text-light mb-0">친구 목록</h3>
+        <form style="width: 120px" class="text-end align-self-center" method="get" action="/friends">
+            <button class="btn btn-light" type="submit">친구 추가</button>
+        </form>
     </div>
+</div>
+
+<div style="position: relative; margin-left: 10px; margin-right: 10px; left: 80px; top: 120px; width: calc(100% - 100px); height: calc(100% - 120px)">
+    {% for friend in friends %}
+    <a href="/single-chats/{{ friend.id }}" class="btn w-100 text-start p-1"><p class="text-light fs-3 m-0">{{ friend.name }}</p></a>
+    <hr class="text-light">
+    {% endfor %}
+    <hr class="text-light">
 </div>
 </body>
 </html>

@@ -17,8 +17,8 @@ from crud.chat import create_text_chat, find_chats_by_chatroom
 from crud.chatroom import create_chatroom, find_chatrooms_by_user, find_or_create_single_chatroom, find_chatroom_by_id
 from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends, \
     find_by_name
-from domain.chat_room import ChatRoomMember, ChatRoom
 from domain.chat import TextChat
+from domain.chat_room import ChatRoomMember, ChatRoom
 from domain.friend_relation import FriendRelation
 from domain.user import User
 from domain.user_session import UserSession

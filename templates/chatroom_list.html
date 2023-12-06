@@ -1,36 +1,37 @@
 <!DOCTYPE html>
-<html lang="ko" class="bg-dark w-100 h-100">
+<html lang="ko" class="bg-dark" style="height: 100%;">
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/static/bootstrap.min.css">
     <title>Chatting</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
-<body class="bg-dark col w-100">
-<div class="row w-100 h-100">
-    {% include "component/div.html" %}
+<body class="bg-dark" style="height: 100%">
+{% include "component/div.html" %}
+<div class="bg-dark row justify-content-between align-items-center m-0"
+     style="position: fixed; left: 80px; width: calc(100% - 80px); height: 70px; z-index: 1">
+    <h2 class="col text-light">채팅</h2>
+    <form style="width: 120px" class="text-end align-self-center" method="get" action="/groupchat">
+        <button class="btn btn-light" type="submit">그룹 채팅</button>
+    </form>
+</div>
 
-    <div class="col m-3 mt-5">
-        <div class="row justify-content-between mb-5">
-            <h2 class="col text-light">채팅</h2>
-            <form style="width: 120px" class="text-end align-self-center" method="get" action="/groupchat">
-                <button class="btn btn-light" type="submit">그룹 채팅</button>
-            </form>
+<div id="chatroom-container"
+     style="position: relative; margin-left: 10px; margin-right: 10px; left: 80px; top: 70px; width: calc(100% - 100px); height: calc(100% - 70px);">
+    {% for chatroom in chatrooms %}
+    <a href="/chatrooms/{{ chatroom.id }}" class="btn w-100 text-start p-1">
+        <div class="row justify-content-between align-items-center">
+            <p class="text-light fs-3 m-0 mb-3 w-75 overflow-hidden" style="white-space: nowrap">{{ chatroom.name
+                }}</p>
+            <p class="text-light col" style="max-width: fit-content">오후 7:28</p>
         </div>
-
-        {% for chatroom in chatrooms %}
-        <a href="/chatrooms/{{ chatroom.id }}" class="btn w-100 text-start p-1">
-            <div class="row justify-content-between align-items-center">
-                <p class="text-light fs-3 m-0 mb-3 w-75 overflow-hidden" style="white-space: nowrap">{{ chatroom.name }}</p>
-                <p class="text-light col" style="max-width: fit-content">오후 7:28</p>
-            </div>
-            <div class="row justify-content-between align-items-center">
-                <p class="text-light w-75 mb-0">최근 채팅</p>
-                <p class="badge text-bg-danger mb-0 me-3" style="max-width: fit-content">2</p>
-            </div>
-        </a>
-        <hr class="text-light m-1">
-        {% endfor %}
-    </div>
+        <div class="row justify-content-between align-items-center">
+            <p class="text-light w-75 mb-0">최근 채팅</p>
+            <p class="badge text-bg-danger mb-0 me-3" style="max-width: fit-content">2</p>
+        </div>
+    </a>
+    <hr class="text-light m-1">
+    {% endfor %}
 </div>
 </body>
 </html>

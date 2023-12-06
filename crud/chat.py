@@ -2,8 +2,8 @@ from datetime import datetime
 
 from sqlmodel import Session, select
 
-from domain.chat_room import ChatRoom
 from domain.chat import TextChat
+from domain.chat_room import ChatRoom
 from domain.user import User
 
 

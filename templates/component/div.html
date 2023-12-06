@@ -1,17 +1,16 @@
-<div class="bg-secondary position-fixed vh-100" style="width: 80px">
-    <div class="mt-5 ms-3 text-center">
+<div class="bg-secondary position-fixed" style="width: 80px; height: 100%">
+    <div class="mt-5 text-center">
         <form action="/">
-            <button class="btn btn-link w-75 p-0 {% if tab == 'home' %}disabled{% endif %}">
-                <img class="w-100" src="/static/icon/person.fill.svg">
+            <button class="btn btn-link p-0 {% if tab == 'home' %}disabled{% endif %}">
+                <img src="/static/icon/person.fill.svg" style="width: 30px">
             </button>
         </form>
     </div>
-    <div class="mt-5 ms-3 text-center">
+    <div class="mt-5 text-center">
         <form action="/chatrooms">
-            <button class="btn btn-link w-75 p-0 {% if tab == 'chat' %}disabled{% endif %}">
-                <img class="w-100" src="/static/icon/bubble.fill.svg">
+            <button class="btn btn-link p-0 {% if tab == 'chat' %}disabled{% endif %}">
+                <img src="/static/icon/bubble.fill.svg" style="width: 30px">
             </button>
         </form>
     </div>
 </div>
-<div style="width: 80px"></div>

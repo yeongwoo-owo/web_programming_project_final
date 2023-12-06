@@ -8,13 +8,16 @@
     <script src="/static/add_friend.js"></script>
 </head>
 <body class="bg-dark col w-100">
-<div class="container mt-5">
-    <form action="/">
+<div class="bg-dark" style="position: fixed; top: 0; height: 200px; width: 100%; z-index: 1; padding: 10px">
+    <form action="/" class="col">
         <button class="btn text-light"><img src="/static/icon/xmark.svg"></button>
     </form>
-    <h1 class="text-light text-center">친구 추가</h1>
-    <input id="friend-input" class="col form-control mt-5" name="name" type="text" placeholder="name" value="">
-    <div id="result" class="mt-5 col"></div>
+    <h1 class="text-light text-center mb-3">친구 추가</h1>
+    <div class="row justify-content-between align-items-center mb-5 ms-5 me-5">
+        <input id="friend-input" class="col w-75 form-control text-center" name="name" type="text"
+               placeholder="name" value="">
+    </div>
 </div>
+<div id="result" class="container" style="position: relative; top: 200px"></div>
 </body>
 </html>
