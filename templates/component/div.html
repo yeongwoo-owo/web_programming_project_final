@@ -2,14 +2,22 @@
     <div class="mt-5 text-center">
         <form action="/">
             <button class="btn btn-link p-0 {% if tab == 'home' %}disabled{% endif %}">
-                <img src="/static/icon/person.fill.svg" style="width: 30px">
+                {% if tab == 'home' %}
+                <img src="/static/icon/person.fill.white.svg" style="width: 30px;">
+                {% else %}
+                <img src="/static/icon/person.fill.black.svg" style="width: 30px;">
+                {% endif %}
             </button>
         </form>
     </div>
     <div class="mt-5 text-center">
         <form action="/chatrooms">
             <button class="btn btn-link p-0 {% if tab == 'chat' %}disabled{% endif %}">
-                <img src="/static/icon/bubble.fill.svg" style="width: 30px">
+                {% if tab == 'chat' %}
+                <img src="/static/icon/bubble.fill.white.svg" style="width: 30px;">
+                {% else %}
+                <img src="/static/icon/bubble.fill.black.svg" style="width: 30px;">
+                {% endif %}
             </button>
         </form>
     </div>
