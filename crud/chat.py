@@ -21,3 +21,7 @@ def time_string():
 
 def find_chats_by_chatroom(session: Session, chatroom: ChatRoom):
     return session.exec(select(TextChat).where(TextChat.chatroom == chatroom)).all()
+
+
+def find_recent_chat_by_chatroom(session: Session, chatroom: ChatRoom):
+    return session.exec(select(TextChat).where(TextChat.chatroom == chatroom).order_by(TextChat.id.desc())).first()

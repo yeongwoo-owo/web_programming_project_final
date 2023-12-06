@@ -13,7 +13,7 @@ from starlette.responses import JSONResponse
 from starlette.status import HTTP_201_CREATED
 from starlette.websockets import WebSocket
 
-from crud.chat import create_text_chat, find_chats_by_chatroom
+from crud.chat import create_text_chat, find_chats_by_chatroom, find_recent_chat_by_chatroom
 from crud.chatroom import create_chatroom, find_chatrooms_by_user, find_or_create_single_chatroom, find_chatroom_by_id
 from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends, \
     find_by_name
@@ -199,7 +199,14 @@ def get_chatrooms(request: Request,
                   session: Session = Depends(session)):
     user = find_by_id(session, user_id)
     chatrooms = find_chatrooms_by_user(session, user)
-    return templates.TemplateResponse("chatroom_list.html", {"request": request, "chatrooms": chatrooms, "tab": "chat"})
+    chatroom_list = []
+    for chatroom in chatrooms:
+        recent_chat = find_recent_chat_by_chatroom(session, chatroom)
+        chatroom = jsonable_encoder(chatroom)
+        chatroom["recent_chat"] = jsonable_encoder(recent_chat)
+        chatroom_list.append(chatroom)
+    chatroom_list.sort(key=lambda x: -x["recent_chat"]["id"] if x["recent_chat"] else -1)
+    return templates.TemplateResponse("chatroom_list.html", {"request": request, "chatrooms": chatroom_list, "tab": "chat"})
 
 
 @app.get("/chatrooms/{chatroom_id}")
