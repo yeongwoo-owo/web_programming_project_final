@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko" class="bg-dark w-100 h-100">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Groupchat</title>
+    <link rel="stylesheet" href="/static/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="/static/add_friend.js"></script>
+</head>
+<body class="bg-dark col w-100">
+<div class="container mt-5">
+    <form action="/chats" class="col">
+        <button class="btn text-light"><img src="/static/icon/xmark.svg"></button>
+    </form>
+    <h1 class="text-light text-center mb-3">그룹 채팅 만들기</h1>
+    <div class="row justify-content-between align-items-center mb-5">
+        <input id="chatroom_name" class="col w-75 form-control text-center ms-4" name="name" type="text" placeholder="채팅방 이름" value="aa">
+        <button id="submit_button" class="btn btn-warning col ms-3 me-4" style="max-width: fit-content">확인</button>
+    </div>
+
+    <form id="friend_list_form">
+        {% for friend in friends %}
+        <div class="m-3 row justify-content-between align-items-center">
+            <p class="p-0 col text-light fs-3 mb-0">{{ friend.name }}</p>
+            <input class="col-1 form-check" type="checkbox" id="{{ friend.id }}"/>
+        </div>
+        <hr class="text-light m-1">
+        {% endfor %}
+    </form>
+</div>
+<script>
+    function find_members() {
+        let members = [];
+        $('#friend_list_form').find('input:checked').each(function () {
+            members.push(parseInt($(this)[0].id));
+        });
+        return members;
+    }
+
+    function create_groupchat() {
+        let members = find_members();
+        let name = $('#chatroom_name').val();
+        console.log(name);
+        let data = {
+            name: name,
+            member_ids: members
+        };
+        console.log(JSON.stringify(data));
+        $.ajax({
+            url: "/groupchat",
+            type: "POST",
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(data)
+        }).done(function (json) {
+            window.location.replace(json["redirect_url"]);
+        });
+    }
+
+    $(document).ready(function () {
+        $("#submit_button").click(function () {
+            create_groupchat();
+        });
+    })
+</script>
+</body>
+</html>

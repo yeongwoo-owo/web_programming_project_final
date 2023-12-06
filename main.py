@@ -187,11 +187,11 @@ def search_users(user_id: Annotated[int | None, Header()],
 
 @app.get("/chats")
 def get_chatrooms(request: Request,
-                   user_id: Annotated[int | None, Header()],
-                   session: Session = Depends(session)):
+                  user_id: Annotated[int | None, Header()],
+                  session: Session = Depends(session)):
     user = find_by_id(session, user_id)
     chatrooms = find_chatrooms_by_user(session, user)
-    return templates.TemplateResponse("chatroom_list.html", {"request": request, "chatrooms": chatrooms})
+    return templates.TemplateResponse("chatroom_list.html", {"request": request, "chatrooms": chatrooms, "tab": "chat"})
 
 
 @app.get("/chats/{chat_id}")
@@ -205,14 +205,38 @@ def get_chatroom(request: Request,
 
 
 @app.get("/single-chats/{friend_id}")
-def get_single_chat(request: Request,
-                    user_id: Annotated[int | None, Header()],
+def get_single_chat(user_id: Annotated[int | None, Header()],
                     friend_id: Annotated[int | None, Path()],
                     session: Session = Depends(session)):
     user = find_by_id(session, user_id)
     friend = find_by_id(session, friend_id)
     chatroom = find_or_create_single_chatroom(session, user, friend)
     return RedirectResponse("/chats/" + str(chatroom.id), status_code=302)
+
+
+@app.get("/groupchat")
+def create_group_chat_form(request: Request,
+                           user_id: Annotated[int | None, Header()],
+                           session: Session = Depends(session)):
+    user = find_by_id(session, user_id)
+    friends = find_friends(session, user)
+    return templates.TemplateResponse("create_chat.html", {"request": request, "friends": friends})
+
+
+class CreateGroupChatRequest(SQLModel):
+    name: str | None
+    member_ids: list | None
+
+
+@app.post("/groupchat")
+def create_group_chat(user_id: Annotated[int | None, Header()],
+                      dto: CreateGroupChatRequest,
+                      session: Session = Depends(session)):
+    print(dto)
+    user = find_by_id(session, user_id)
+    members = list(map(lambda x: find_by_id(session, x), dto.member_ids))
+    chatroom = create_chatroom(session, members + [user], dto.name)
+    return JSONResponse({"chatroom_id": chatroom.id, "redirect_url": "/chats/" + str(chatroom.id)})
 
 
 if __name__ == "__main__":
