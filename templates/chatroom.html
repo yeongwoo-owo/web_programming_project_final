@@ -6,9 +6,14 @@
     <link rel="stylesheet" href="/static/bootstrap.min.css">
     <link rel="stylesheet" href="/static/chatroom.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="/static/chat.js"></script>
 </head>
 <body id="wrap" class="bg-dark">
 <div id="chat-container">
+    <div id="header">
+        <img id="x-button" src="/static/icon/xmark.svg" onclick="history.back()">
+        <h3 id="chatroom-name" class="text-light">{{ chatroom.name }}</h3>
+    </div>
     <div id="chat-list">
         <div class="chat me">
             <div class="chat-row">

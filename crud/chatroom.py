@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
 
-from domain.ChatRoom import ChatRoom, ChatRoomMember
+from domain.chat_room import ChatRoom, ChatRoomMember
 from domain.user import User
 
 
@@ -11,6 +11,7 @@ def create_chatroom(session: Session, members: list, name: str = "") -> ChatRoom
         user = ChatRoomMember(chatroom=chatroom, member=member)
         session.add(user)
     session.commit()
+    session.refresh(chatroom)
     return chatroom
 
 
@@ -32,8 +33,8 @@ def find_or_create_single_chatroom(session: Session, user: User, other: User) ->
     return create_chatroom(session, [user, other])
 
 
-def find_chatroom_by_id(session: Session, chat_id: int, user: User) -> ChatRoom:
-    chatroom = session.exec(select(ChatRoom).where(ChatRoom.id == chat_id)).first()
+def find_chatroom_by_id(session: Session, chatroom_id: int, user: User) -> ChatRoom:
+    chatroom = session.exec(select(ChatRoom).where(ChatRoom.id == chatroom_id)).first()
     return set_chatroom_name(chatroom, user)
 
 

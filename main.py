@@ -11,15 +11,19 @@ from sqlmodel import create_engine
 from starlette.datastructures import MutableHeaders
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_201_CREATED
+from starlette.websockets import WebSocket
 
+from crud.chat import create_text_chat, find_chats_by_chatroom
 from crud.chatroom import create_chatroom, find_chatrooms_by_user, find_or_create_single_chatroom, find_chatroom_by_id
 from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends, \
     find_by_name
-from domain.ChatRoom import ChatRoomMember, ChatRoom
+from domain.chat_room import ChatRoomMember, ChatRoom
+from domain.chat import TextChat
 from domain.friend_relation import FriendRelation
 from domain.user import User
 from domain.user_session import UserSession
 from exception.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
+from websocket.connection_manager import manager
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
@@ -47,6 +51,8 @@ def setup():
             session.delete(member)
         for room in session.exec(select(ChatRoom)).all():
             session.delete(room)
+        for chat in session.exec(select(TextChat)).all():
+            session.delete(chat)
         session.commit()
 
         user = create_user(session, "유저", "user", "user")
@@ -66,7 +72,9 @@ def setup():
         add_friend_relation(session, user, userA)
         add_friend_relation(session, user, userB)
         add_friend_relation(session, user, userC)
-        create_chatroom(session, [user, userA, userB, userC, userD, userE])
+        chatroom = create_chatroom(session, [user, userA, userB, userC, userD, userE])
+        create_text_chat(session, chatroom, user, "안녕")
+        create_text_chat(session, chatroom, userA, "안녕하세요")
 
 
 # TODO: PRG 적용
@@ -185,7 +193,7 @@ def search_users(user_id: Annotated[int | None, Header()],
     return JSONResponse({"result": jsonable_encoder(users)})
 
 
-@app.get("/chats")
+@app.get("/chatrooms")
 def get_chatrooms(request: Request,
                   user_id: Annotated[int | None, Header()],
                   session: Session = Depends(session)):
@@ -194,13 +202,13 @@ def get_chatrooms(request: Request,
     return templates.TemplateResponse("chatroom_list.html", {"request": request, "chatrooms": chatrooms, "tab": "chat"})
 
 
-@app.get("/chats/{chat_id}")
+@app.get("/chatrooms/{chatroom_id}")
 def get_chatroom(request: Request,
                  user_id: Annotated[int | None, Header()],
-                 chat_id: Annotated[int | None, Path()],
+                 chatroom_id: Annotated[int | None, Path()],
                  session: Session = Depends(session)):
     user = find_by_id(session, user_id)
-    chatroom = find_chatroom_by_id(session, chat_id, user)
+    chatroom = find_chatroom_by_id(session, chatroom_id, user)
     return templates.TemplateResponse("chatroom.html", {"request": request, "chatroom": chatroom})
 
 
@@ -211,7 +219,7 @@ def get_single_chat(user_id: Annotated[int | None, Header()],
     user = find_by_id(session, user_id)
     friend = find_by_id(session, friend_id)
     chatroom = find_or_create_single_chatroom(session, user, friend)
-    return RedirectResponse("/chats/" + str(chatroom.id), status_code=302)
+    return RedirectResponse("/chatrooms/" + str(chatroom.id), status_code=302)
 
 
 @app.get("/groupchat")
@@ -236,7 +244,34 @@ def create_group_chat(user_id: Annotated[int | None, Header()],
     user = find_by_id(session, user_id)
     members = list(map(lambda x: find_by_id(session, x), dto.member_ids))
     chatroom = create_chatroom(session, members + [user], dto.name)
-    return JSONResponse({"chatroom_id": chatroom.id, "redirect_url": "/chats/" + str(chatroom.id)})
+    return JSONResponse({"chatroom_id": chatroom.id, "redirect_url": "/chatrooms/" + str(chatroom.id)})
+
+
+@app.get("/chatrooms/{chatroom_id}/chats")
+def get_chats(user_id: Annotated[int | None, Header()],
+              chatroom_id: Annotated[int | None, Path()],
+              session: Session = Depends(session)):
+    user = find_by_id(session, user_id)
+    chatroom = find_chatroom_by_id(session, chatroom_id, user)
+    chats = jsonable_encoder(find_chats_by_chatroom(session, chatroom))
+    for chat in chats:
+        chat['writer'] = find_by_id(session, chat['writer_id'])
+    return JSONResponse({"login_user": user.id, "chatroom_id": chatroom.id,"chats": jsonable_encoder(chats)})
+
+
+@app.websocket("/ws/connect")
+async def ws_connect(ws: WebSocket, session: Session = Depends(session)):
+    await manager.connect(ws)
+    try:
+        while True:
+            data = await ws.receive_json()
+            writer = find_by_id(session, data["writer_id"])
+            chatroom = find_chatroom_by_id(session, data["chatroom_id"], writer)
+            chat = jsonable_encoder(create_text_chat(session, chatroom, writer, data["text"]))
+            chat['writer'] = find_by_id(session, writer.id)
+            await manager.broadcast(jsonable_encoder(chat))
+    finally:
+        await manager.disconnect(ws)
 
 
 if __name__ == "__main__":

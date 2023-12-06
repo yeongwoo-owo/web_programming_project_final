@@ -20,6 +20,7 @@ def create_user(session: Session, name: str, login_id: str, password: str) -> Us
     user.session = UserSession()
     session.add(user)
     session.commit()
+    session.refresh(user)
     return user
 
 
@@ -31,6 +32,7 @@ def login_user(session: Session, login_id: str, password: str) -> User:
     user.session.session_id = str(uuid())
     session.add(user)
     session.commit()
+    session.refresh(user)
     return user
 
 
