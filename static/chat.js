@@ -17,6 +17,8 @@ $(document).ready(function () {
                 addTextChat(login_id, chat);
             } else if (chat_type === "image") {
                 addImageChat(login_id, chat);
+            } else if (chat_type === "video") {
+                addVideoChat(login_id, chat);
             }
         });
         scrollToTop();
@@ -32,6 +34,8 @@ $(document).ready(function () {
             addTextChat(login_id, json);
         } else if (chat_type === "image") {
             addImageChat(login_id, json);
+        } else if (chat_type === "video") {
+            addVideoChat(login_id, json);
         }
     };
 
@@ -102,7 +106,6 @@ function addTextChat(login_id, chat) {
 
 function addTextChatUI(login_id, chat) {
     let ui = $('#chat-list');
-    let width = ui.width();
     ui.append(`
         <div class="chat ${getUserTag(login_id, chat)}">
             <div class="chat-writer text-light">${chat.writer.name}</div>
@@ -127,11 +130,34 @@ function addImageChatUI(login_id, chat) {
         <div class="chat ${getUserTag(login_id, chat)}">
             <div class="chat-writer text-light">${chat.writer.name}</div>
             <div class="chat-row">
-                <div class="chat-image"><img src="http://localhost:8000/images/${chat["image"]["image_name"]}" width="${width / 100 * 60}" height="auto"></div>
+                <div class="chat-image"><img src="http://localhost:8000/images/${chat["image"]["image_name"]}" width="${width / 100 * 60}" height="auto" 
+                onclick="window.open('http://localhost:8000/images/${chat["image"]["image_name"]}')"></div>
                 <div class="chat-time text-light">${parseTime(chat.time)}</div>
             </div>
         </div>
     `)
+}
+
+function addVideoChat(login_id, chat) {
+    addVideoChatUI(login_id, chat);
+    scrollToTop();
+}
+
+function addVideoChatUI(login_id, chat) {
+    let ui = $('#chat-list');
+    let width = window.innerWidth;
+    ui.append(`
+        <div class="chat ${getUserTag(login_id, chat)}">
+            <div class="chat-writer text-light">${chat.writer.name}</div>
+            <div class="chat-row">
+                <div class="chat-video">
+                    <video class="video" src="http://localhost:8000/images/${chat["image"]["image_name"]}" width="${width / 100 * 60}" height="auto" muted autoplay
+                        onclick="window.open('http://localhost:8000/images/${chat["image"]["image_name"]}')"></video>
+                </div>
+                <div class="chat-time text-light">${parseTime(chat.time)}</div>
+            </div>
+        </div>
+    `);
 }
 
 function convertToHtml(text) {

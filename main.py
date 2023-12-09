@@ -179,6 +179,8 @@ def get_chatrooms(request: Request,
 
             if chat_type == "image":
                 chat["text"] = "사진"
+            elif chat_type == "video":
+                chat["text"] = "비디오"
 
             chatroom["recent_chat"] = chat
         else:
@@ -258,7 +260,7 @@ def get_chats(user_id: Annotated[int | None, Header()],
         c["chat_type"] = chat_type
         c['writer'] = find_by_id(session, c['writer_id'])
 
-        if chat_type == "image":
+        if chat_type == "image" or chat_type == "video":
             image = find_image_by_id(session, c['image_id'])
             c['image'] = jsonable_encoder(image)
 
@@ -282,6 +284,7 @@ async def ws_connect(ws: WebSocket, session: Session = Depends(session)):
                 chat['writer'] = find_by_id(session, writer.id)
                 chat['chat_type'] = 'text'
                 await manager.broadcast(jsonable_encoder(chat))
+
             elif chat_type == "image":
                 image_id = data['image_id']
                 image = find_image_by_id(session, image_id)
@@ -289,7 +292,7 @@ async def ws_connect(ws: WebSocket, session: Session = Depends(session)):
                 chat = jsonable_encoder(create_image_chat(session, chatroom, writer, image))
                 chat['writer'] = find_by_id(session, writer.id)
                 chat['image'] = encoded_image
-                chat['chat_type'] = 'image'
+                chat['chat_type'] = encoded_image["image_type"]
                 print(f'{chat=}')
                 await manager.broadcast(jsonable_encoder(chat))
 

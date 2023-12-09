@@ -35,4 +35,4 @@ class ImageChat(Chat, table=True):
     image: Optional["Image"] = Relationship()
 
     def chat_type(self):
-        return "image"
+        return self.image.image_type
