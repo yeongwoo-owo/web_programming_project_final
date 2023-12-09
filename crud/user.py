@@ -51,7 +51,7 @@ def find_by_session_id(session: Session, session_id: str) -> User:
     return user_session.user
 
 
-def add_friend_relation(session: Session, user: User, friend: User):
+def add_friend_relation(session: Session, user: User, friend: User) -> object:
     session.add(FriendRelation(user=user, friend=friend))
     session.commit()
 
