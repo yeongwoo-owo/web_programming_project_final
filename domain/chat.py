@@ -15,3 +15,11 @@ class TextChat(Chat, table=True):
 
     chatroom: Optional["ChatRoom"] = Relationship()
     writer: Optional["User"] = Relationship()
+
+
+class ImageChat(Chat, table=True):
+    image_id: Optional[int] = Field(default=None, foreign_key="image.id")
+
+    chatroom: Optional["ChatRoom"] = Relationship()
+    writer: Optional["User"] = Relationship()
+    image: Optional["Image"] = Relationship()

@@ -1,7 +1,7 @@
 from typing import Annotated
 
 import uvicorn
-from fastapi import FastAPI, Depends, Form, Request, Header, Path
+from fastapi import FastAPI, Depends, Form, Request, Header, Path, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -9,12 +9,13 @@ from fastapi.templating import Jinja2Templates
 from sqlmodel import SQLModel, Session
 from sqlmodel import create_engine
 from starlette.datastructures import MutableHeaders
-from starlette.responses import JSONResponse
+from starlette.responses import JSONResponse, FileResponse
 from starlette.status import HTTP_201_CREATED
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
 from crud.chat import create_text_chat, find_chats_by_chatroom, find_recent_chat_by_chatroom
 from crud.chatroom import create_chatroom, find_chatrooms_by_user, find_or_create_single_chatroom, find_chatroom_by_id
+from crud.image import create_image
 from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends, \
     find_by_name
 from exception.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
@@ -116,6 +117,7 @@ def login(login_id: str = Form(),
     user = login_user(session, login_id, password)
     response = RedirectResponse(url="/", status_code=302)
     response.set_cookie(key="session_id", value=user.session.session_id)
+    print(user)
     return response
 
 
@@ -169,7 +171,8 @@ def get_chatrooms(request: Request,
         chatroom["recent_chat"] = jsonable_encoder(recent_chat)
         chatroom_list.append(chatroom)
     chatroom_list.sort(key=lambda x: -x["recent_chat"]["id"] if x["recent_chat"] else -1)
-    return templates.TemplateResponse("chatroom_list.html", {"request": request, "chatrooms": chatroom_list, "tab": "chat"})
+    return templates.TemplateResponse("chatroom_list.html",
+                                      {"request": request, "chatrooms": chatroom_list, "tab": "chat"})
 
 
 @app.get("/chatrooms/{chatroom_id}")
@@ -226,7 +229,7 @@ def get_chats(user_id: Annotated[int | None, Header()],
     chats = jsonable_encoder(find_chats_by_chatroom(session, chatroom))
     for chat in chats:
         chat['writer'] = find_by_id(session, chat['writer_id'])
-    return JSONResponse({"login_user": user.id, "chatroom_id": chatroom.id,"chats": jsonable_encoder(chats)})
+    return JSONResponse({"login_user": user.id, "chatroom_id": chatroom.id, "chats": jsonable_encoder(chats)})
 
 
 @app.websocket("/ws/connect")
@@ -244,6 +247,20 @@ async def ws_connect(ws: WebSocket, session: Session = Depends(session)):
         print(e)
     finally:
         await manager.disconnect(ws)
+
+
+@app.post("/image")
+async def upload_image(user_id: Annotated[int | None, Header()],
+                       file: UploadFile,
+                       session: Session = Depends(session)):
+    image = await create_image(session, file, "./static")
+    return JSONResponse(jsonable_encoder(image))
+
+
+@app.get("/image/{image_name}")
+async def download_image(user_id: Annotated[int | None, Header()],
+                         image_name: Annotated[str | None, Path()]):
+    return FileResponse("./static/image/" + image_name)
 
 
 if __name__ == "__main__":
