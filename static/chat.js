@@ -12,33 +12,62 @@ $(document).ready(function () {
         login_id = json["login_user"];
         chatroom_id = json["chatroom_id"];
         json["chats"].forEach(chat => {
-            addChatUI(login_id, chat)
+            let chat_type = chat["chat_type"];
+            if (chat_type === "text") {
+                addTextChat(login_id, chat);
+            } else if (chat_type === "image") {
+                addImageChat(login_id, chat);
+            }
         });
         scrollToTop();
     });
 
     ws = new WebSocket("ws://localhost:8000/ws/connect");
     ws.onmessage = function (event) {
-        console.log(event.data);
         let json = JSON.parse(event.data);
         console.log(json);
-        addChat(login_id, json);
+
+        let chat_type = json["chat_type"];
+        if (chat_type === "text") {
+            addTextChat(login_id, json);
+        } else if (chat_type === "image") {
+            addImageChat(login_id, json);
+        }
     };
 
     $('#input-text').on('keydown', function (event) {
         if (event.keyCode === 13) {
             if (!event.shiftKey) {
                 event.preventDefault();
-                sendMessage();
+                sendText();
             }
         }
     });
 
     $('#input-button').click(function () {
-        sendMessage();
+        sendText();
     });
 
-    function sendMessage() {
+    $('#image-input').change(function () {
+        let image = $(this)[0].files[0];
+        console.log(image);
+
+        let data = new FormData();
+        data.append("file", image);
+
+        $.ajax({
+            url: "/images",
+            type: "post",
+            contentType: false,
+            processData: false,
+            data: data
+        }).done(function (json) {
+            console.log(json)
+            sendImage(json["id"])
+        });
+    })
+
+    function sendText() {
         let text = $('#input-text').val();
         if (text === "") {
             return;
@@ -46,30 +75,63 @@ $(document).ready(function () {
         let data = JSON.stringify({
             writer_id: login_id,
             chatroom_id: chatroom_id,
-            text: text
+            text: text,
+            chat_type: "text"
+        });
+        console.log(data);
+        ws.send(data);
+    }
+
+    function sendImage(imageId) {
+        let data = JSON.stringify({
+            writer_id: login_id,
+            chatroom_id: chatroom_id,
+            image_id: imageId,
+            chat_type: "image"
         });
         console.log(data);
         ws.send(data);
     }
 });
 
-function addChat(login_id, chat) {
-    addChatUI(login_id, chat);
+function addTextChat(login_id, chat) {
+    addTextChatUI(login_id, chat);
     clearText($('#input-text'))
     scrollToTop();
 }
 
-function addChatUI(login_id, chat) {
+function addTextChatUI(login_id, chat) {
     let ui = $('#chat-list');
+    let width = ui.width();
     ui.append(`
         <div class="chat ${getUserTag(login_id, chat)}">
             <div class="chat-writer text-light">${chat.writer.name}</div>
             <div class="chat-row">
                 <div class="chat-text">${convertToHtml(chat.text)}</div>
-                <div class="chat-time text-light">${chat.time}</div>
+                <div class="chat-time text-light">${parseTime(chat.time)}</div>
             </div>
         </div>
     `);
+}
+
+
+function addImageChat(login_id, chat) {
+    addImageChatUI(login_id, chat);
+    scrollToTop();
+}
+
+function addImageChatUI(login_id, chat) {
+    let ui = $('#chat-list');
+    let width = window.innerWidth;
+    ui.append(`
+        <div class="chat ${getUserTag(login_id, chat)}">
+            <div class="chat-writer text-light">${chat.writer.name}</div>
+            <div class="chat-row">
+                <div class="chat-image"><img src="http://localhost:8000/images/${chat["image"]["image_name"]}" width="${width / 100 * 60}" height="auto"></div>
+                <div class="chat-time text-light">${parseTime(chat.time)}</div>
+            </div>
+        </div>
+    `)
 }
 
 function convertToHtml(text) {
@@ -87,4 +149,14 @@ function clearText(ui) {
 function scrollToTop() {
     let ui = $('#chat-list');
     ui.scrollTop(ui[0].scrollHeight);
+}
+
+function parseTime(time) {
+    let date = new Date(time);
+    console.log(date);
+    let hour = date.getHours();
+    let minute = date.getMinutes();
+    let a = hour >= 12 ? "오후" : "오전";
+    hour = (hour - 1) % 12 + 1;
+    return a + " " + hour + ":" + minute.toString().padStart(2, '0');
 }

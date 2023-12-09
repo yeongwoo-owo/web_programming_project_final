@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="/static/bootstrap.min.css">
     <title>Chatting</title>
+    <link rel="stylesheet" href="/static/chatroom_list.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 </head>
 <body class="bg-dark" style="height: 100%">
@@ -16,21 +17,26 @@
     </form>
 </div>
 
-<div id="chatroom-container"
-     style="position: relative; margin-left: 10px; margin-right: 10px; left: 80px; top: 70px; width: calc(100% - 100px); height: calc(100% - 70px);">
+<div id="chatroom-container" style="position: relative; margin-left: 10px; margin-right: 10px; left: 80px; top: 70px; width: calc(100% - 100px); height: calc(100% - 70px);">
     {% for chatroom in chatrooms %}
     <a href="/chatrooms/{{ chatroom.id }}" class="btn w-100 text-start p-1">
         <div class="row justify-content-between align-items-center">
-            <p class="text-light fs-3 m-0 mb-3 w-75 overflow-hidden" style="white-space: nowrap">{{ chatroom.name
+            <p class="text-light fs-3 m-0 mb-3 w-75 overflow-hidden limit-text">{{ chatroom.name
                 }}</p>
-            <p class="text-light col" style="max-width: fit-content">{{ chatroom.recent_chat.time }}</p>
+            <p class="text-light col" style="max-width: fit-content">{{ chatroom.recent_chat.time_string }}</p>
         </div>
         <div class="row justify-content-between align-items-center">
-            <p class="text-light w-75 mb-0">{{ chatroom.recent_chat.text }}</p>
+            <p id="recent-chat-text" class="text-light w-75 mb-0 limit-text">{{ chatroom.recent_chat.text }}</p>
         </div>
     </a>
     <hr class="text-light m-1">
     {% endfor %}
 </div>
+<script>
+    $(document).ready(function () {
+        let width = $('#chatroom-container').width();
+        $('.limit-text').width(width / 100 * 70 + "px");
+    });
+</script>
 </body>
 </html>

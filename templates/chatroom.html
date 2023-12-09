@@ -15,10 +15,16 @@
         <h3 id="chatroom-name" class="text-light">{{ chatroom.name }}</h3>
     </div>
     <div id="chat-list"></div>
-    <label id="input" class="bg-secondary">
+    <div id="input" class="bg-secondary">
         <textarea id="input-text" class="bg-secondary text-light"></textarea>
-        <input id="input-button" class="btn btn-warning" type="button" value="Send">
-    </label>
+        <input id="image-input" type="file" name="file" accept="image/*">
+        <div id="buttons">
+            <label for="image-input" class="image-button btn-link text-center m-1">
+                <img src="/static/icon/paperclip.svg">
+            </label>
+            <button id="input-button" class="btn btn-warning">Send</button>
+        </div>
+    </div>
 </div>
 </body>
 </html>

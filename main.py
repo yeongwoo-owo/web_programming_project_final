@@ -1,3 +1,4 @@
+from time import mktime
 from typing import Annotated
 
 import uvicorn
@@ -13,9 +14,9 @@ from starlette.responses import JSONResponse, FileResponse
 from starlette.status import HTTP_201_CREATED
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from crud.chat import create_text_chat, find_chats_by_chatroom, find_recent_chat_by_chatroom
+from crud.chat import create_text_chat, find_chats_by_chatroom, find_recent_chat_by_chatroom, create_image_chat
 from crud.chatroom import create_chatroom, find_chatrooms_by_user, find_or_create_single_chatroom, find_chatroom_by_id
-from crud.image import create_image
+from crud.image import create_image, find_image_by_id
 from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends, \
     find_by_name
 from exception.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
@@ -61,7 +62,7 @@ def update_header(request: Request, key, value):
 
 
 def is_whitelist(path):
-    whitelist = ["/login", "/register", "/static", "/favicon.ico"]
+    whitelist = ["/login", "/register", "/static", "/favicon.ico", "/images"]
     for url in whitelist:
         if path.startswith(url):
             return True
@@ -168,11 +169,34 @@ def get_chatrooms(request: Request,
     for chatroom in chatrooms:
         recent_chat = find_recent_chat_by_chatroom(session, chatroom)
         chatroom = jsonable_encoder(chatroom)
-        chatroom["recent_chat"] = jsonable_encoder(recent_chat)
+
+        if recent_chat:
+            time = recent_chat.date_time()
+            chat_type = recent_chat.chat_type()
+            chat = jsonable_encoder(recent_chat)
+            chat["time_string"] = parse_time(time)
+            chat["time"] = time
+
+            if chat_type == "image":
+                chat["text"] = "사진"
+
+            chatroom["recent_chat"] = chat
+        else:
+            chatroom["recent_chat"] = None
+
         chatroom_list.append(chatroom)
-    chatroom_list.sort(key=lambda x: -x["recent_chat"]["id"] if x["recent_chat"] else -1)
+    print(chatroom_list)
+    chatroom_list.sort(key=lambda x: -mktime(x["recent_chat"]["time"].timetuple()) if x["recent_chat"] else -1)
     return templates.TemplateResponse("chatroom_list.html",
                                       {"request": request, "chatrooms": chatroom_list, "tab": "chat"})
+
+
+def parse_time(date):
+    hour = date.hour
+    minute = date.minute
+    a = "오후" if hour >= 12 else "오전"
+    hour = (hour - 1) % 12 + 1
+    return f'{a} {hour}:{minute:0>2}'
 
 
 @app.get("/chatrooms/{chatroom_id}")
@@ -226,10 +250,21 @@ def get_chats(user_id: Annotated[int | None, Header()],
               session: Session = Depends(session)):
     user = find_by_id(session, user_id)
     chatroom = find_chatroom_by_id(session, chatroom_id, user)
-    chats = jsonable_encoder(find_chats_by_chatroom(session, chatroom))
+    chats = find_chats_by_chatroom(session, chatroom)
+    chat_list = []
     for chat in chats:
-        chat['writer'] = find_by_id(session, chat['writer_id'])
-    return JSONResponse({"login_user": user.id, "chatroom_id": chatroom.id, "chats": jsonable_encoder(chats)})
+        chat_type = chat.chat_type()
+        c = jsonable_encoder(chat)
+        c["chat_type"] = chat_type
+        c['writer'] = find_by_id(session, c['writer_id'])
+
+        if chat_type == "image":
+            image = find_image_by_id(session, c['image_id'])
+            c['image'] = jsonable_encoder(image)
+
+        chat_list.append(c)
+    print(chat_list)
+    return JSONResponse({"login_user": user.id, "chatroom_id": chatroom.id, "chats": jsonable_encoder(chat_list)})
 
 
 @app.websocket("/ws/connect")
@@ -238,28 +273,41 @@ async def ws_connect(ws: WebSocket, session: Session = Depends(session)):
     try:
         while True:
             data = await ws.receive_json()
+            chat_type = data["chat_type"]
             writer = find_by_id(session, data["writer_id"])
             chatroom = find_chatroom_by_id(session, data["chatroom_id"], writer)
-            chat = jsonable_encoder(create_text_chat(session, chatroom, writer, data["text"]))
-            chat['writer'] = find_by_id(session, writer.id)
-            await manager.broadcast(jsonable_encoder(chat))
+
+            if chat_type == "text":
+                chat = jsonable_encoder(create_text_chat(session, chatroom, writer, data["text"]))
+                chat['writer'] = find_by_id(session, writer.id)
+                chat['chat_type'] = 'text'
+                await manager.broadcast(jsonable_encoder(chat))
+            elif chat_type == "image":
+                image_id = data['image_id']
+                image = find_image_by_id(session, image_id)
+                encoded_image = jsonable_encoder(image)
+                chat = jsonable_encoder(create_image_chat(session, chatroom, writer, image))
+                chat['writer'] = find_by_id(session, writer.id)
+                chat['image'] = encoded_image
+                chat['chat_type'] = 'image'
+                print(f'{chat=}')
+                await manager.broadcast(jsonable_encoder(chat))
+
     except WebSocketDisconnect as e:
         print(e)
     finally:
         await manager.disconnect(ws)
 
 
-@app.post("/image")
-async def upload_image(user_id: Annotated[int | None, Header()],
-                       file: UploadFile,
+@app.post("/images")
+async def upload_image(file: UploadFile,
                        session: Session = Depends(session)):
     image = await create_image(session, file, "./static")
     return JSONResponse(jsonable_encoder(image))
 
 
-@app.get("/image/{image_name}")
-async def download_image(user_id: Annotated[int | None, Header()],
-                         image_name: Annotated[str | None, Path()]):
+@app.get("/images/{image_name}")
+async def download_image(image_name: Annotated[str | None, Path()]):
     return FileResponse("./static/image/" + image_name)
 
 

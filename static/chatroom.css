@@ -66,6 +66,17 @@ html, body {
     outline: none;
 }
 
+#buttons {
+    width: fit-content;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+#image-input {
+    display: none;
+}
+
 #input-button {
     align-self: flex-end;
 }

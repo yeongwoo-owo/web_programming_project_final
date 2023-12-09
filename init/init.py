@@ -1,9 +1,11 @@
+import os
+
 from sqlmodel import select
 
 from crud.chat import create_text_chat
 from crud.chatroom import create_chatroom
 from crud.user import create_user, add_friend_relation
-from domain.chat import TextChat
+from domain.chat import TextChat, ImageChat
 from domain.chat_room import ChatRoomMember, ChatRoom
 from domain.friend_relation import FriendRelation
 from domain.user import User
@@ -23,6 +25,12 @@ def init_db(session):
         session.delete(room)
     for chat in session.exec(select(TextChat)).all():
         session.delete(chat)
+    for chat in session.exec(select(ImageChat)).all():
+        session.delete(chat)
+
+    base_path = "./static/image"
+    for image in os.listdir(base_path):
+        os.unlink(os.path.join(base_path, image))
     session.commit()
 
     user = create_user(session, "유저", "user", "user")
