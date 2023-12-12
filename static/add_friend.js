@@ -19,9 +19,10 @@ function friend_button_builder(friend_id, is_friend) {
 }
 
 $(document).ready(function () {
-    $("#friend-input").keydown(function () {
+    $("#friend-input").on("keyup", function () {
+        console.log("query: " + $(this).val());
         $.ajax({
-            url: "/users?query=" + this.value,
+            url: "/users?query=" + $(this).val(),
             type: "GET",
             dataType: "json"
         }).done(function (json) {
