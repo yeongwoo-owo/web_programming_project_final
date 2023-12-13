@@ -14,13 +14,8 @@ from starlette.responses import JSONResponse, FileResponse
 from starlette.status import HTTP_201_CREATED
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from crud.chat import create_text_chat, find_chats_by_chatroom, find_recent_chat_by_chatroom, create_image_chat
-from crud.chatroom import create_chatroom, find_chatrooms_by_user, find_or_create_single_chatroom, find_chatroom_by_id
-from crud.image import create_image, find_image_by_id
-from crud.user import create_user, login_user, find_by_session_id, find_by_id, add_friend_relation, find_friends, \
-    find_by_name
 from exception.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
-from init.init import init_db
+from repository import user_repository, chatroom_repository, chat_repository, image_repository
 from websocket.connection_manager import manager
 
 app = FastAPI()
@@ -37,9 +32,6 @@ def session():
 @app.on_event("startup")
 def setup():
     SQLModel.metadata.create_all(engine)
-
-    with Session(engine) as session:
-        init_db(session)
 
 
 # TODO: PRG 적용
@@ -81,7 +73,7 @@ async def authentication_filter(request: Request, call_next):
         try:
             with Session(engine) as session:
                 session_id = request.cookies["session_id"]
-                user = find_by_session_id(session, session_id)
+                user = user_repository.find_by_session_id(session, session_id)
                 request = update_header(request, key="user-id", value=user.id)
         except SessionNotFoundException as e:
             print(e)
@@ -91,23 +83,23 @@ async def authentication_filter(request: Request, call_next):
 
 
 @app.get("/register")
-def register_user_form(request: Request):
+def register_form(request: Request):
     return templates.TemplateResponse("register_form.html", {"request": request})
 
 
 @app.post("/register")
-def register_user(name: str = Form(),
-                  login_id: str = Form(),
-                  password: str = Form(),
-                  session: Session = Depends(session)):
-    user = create_user(session, name=name, login_id=login_id, password=password)
+def register(name: str = Form(),
+             login_id: str = Form(),
+             password: str = Form(),
+             session: Session = Depends(session)):
+    user = user_repository.create(session, name=name, login_id=login_id, password=password)
     response = RedirectResponse(url="/", status_code=302)
     response.set_cookie(key="session_id", value=user.session.session_id)
     return response
 
 
 @app.get("/login")
-def login_user_form(request: Request):
+def login_form(request: Request):
     return templates.TemplateResponse("login_form.html", {"request": request})
 
 
@@ -115,7 +107,7 @@ def login_user_form(request: Request):
 def login(login_id: str = Form(),
           password: str = Form(),
           session: Session = Depends(session)):
-    user = login_user(session, login_id, password)
+    user = user_repository.login(session, login_id, password)
     response = RedirectResponse(url="/", status_code=302)
     response.set_cookie(key="session_id", value=user.session.session_id)
     print(user)
@@ -126,8 +118,8 @@ def login(login_id: str = Form(),
 def home(request: Request,
          user_id: Annotated[int | None, Header()],
          session: Session = Depends(session)):
-    user = find_by_id(session, user_id)
-    friends = find_friends(session, user)
+    user = user_repository.find_by_id(session, user_id)
+    friends = user_repository.find_friends(session, user)
     return templates.TemplateResponse("home.html",
                                       {"request": request, "user": user, "friends": friends, "tab": "home"})
 
@@ -141,18 +133,18 @@ def add_friend_form(request: Request):
 def add_friend(user_id: Annotated[int | None, Header()],
                friend_id: Annotated[int | None, Path()],
                session: Session = Depends(session)):
-    user = find_by_id(session, user_id)
-    friend = find_by_id(session, friend_id)
-    add_friend_relation(session, user, friend)
+    user = user_repository.find_by_id(session, user_id)
+    friend = user_repository.find_by_id(session, friend_id)
+    user_repository.add_friend_relation(session, user, friend)
 
 
 @app.get("/users")
 def search_users(user_id: Annotated[int | None, Header()],
                  query: str = "",
                  session: Session = Depends(session)):
-    users = find_by_name(session, query)
-    user = find_by_id(session, user_id)
-    friends = find_friends(session, user)
+    users = user_repository.find_by_name(session, query)
+    user = user_repository.find_by_id(session, user_id)
+    friends = user_repository.find_friends(session, user)
     if user in users:
         users.remove(user)
     users = sorted(list(map(lambda x: {"user": x, "is_friend": x in friends}, users)), key=lambda x: x["is_friend"])
@@ -163,11 +155,11 @@ def search_users(user_id: Annotated[int | None, Header()],
 def get_chatrooms(request: Request,
                   user_id: Annotated[int | None, Header()],
                   session: Session = Depends(session)):
-    user = find_by_id(session, user_id)
-    chatrooms = find_chatrooms_by_user(session, user)
+    user = user_repository.find_by_id(session, user_id)
+    chatrooms = chatroom_repository.find_by_user(session, user)
     chatroom_list = []
     for chatroom in chatrooms:
-        recent_chat = find_recent_chat_by_chatroom(session, chatroom)
+        recent_chat = chat_repository.find_by_chatroom(session, chatroom)
         chatroom = jsonable_encoder(chatroom)
 
         if recent_chat:
@@ -206,8 +198,8 @@ def get_chatroom(request: Request,
                  user_id: Annotated[int | None, Header()],
                  chatroom_id: Annotated[int | None, Path()],
                  session: Session = Depends(session)):
-    user = find_by_id(session, user_id)
-    chatroom = find_chatroom_by_id(session, chatroom_id, user)
+    user = user_repository.find_by_id(session, user_id)
+    chatroom = chatroom_repository.find_by_id(session, chatroom_id, user)
     return templates.TemplateResponse("chatroom.html", {"request": request, "chatroom": chatroom})
 
 
@@ -215,9 +207,9 @@ def get_chatroom(request: Request,
 def get_single_chat(user_id: Annotated[int | None, Header()],
                     friend_id: Annotated[int | None, Path()],
                     session: Session = Depends(session)):
-    user = find_by_id(session, user_id)
-    friend = find_by_id(session, friend_id)
-    chatroom = find_or_create_single_chatroom(session, user, friend)
+    user = user_repository.find_by_id(session, user_id)
+    friend = user_repository.find_by_id(session, friend_id)
+    chatroom = chatroom_repository.get_single_chat(session, user, friend)
     return RedirectResponse("/chatrooms/" + str(chatroom.id), status_code=302)
 
 
@@ -225,8 +217,8 @@ def get_single_chat(user_id: Annotated[int | None, Header()],
 def create_group_chat_form(request: Request,
                            user_id: Annotated[int | None, Header()],
                            session: Session = Depends(session)):
-    user = find_by_id(session, user_id)
-    friends = find_friends(session, user)
+    user = user_repository.find_by_id(session, user_id)
+    friends = user_repository.find_friends(session, user)
     return templates.TemplateResponse("create_chat.html", {"request": request, "friends": friends})
 
 
@@ -240,9 +232,9 @@ def create_group_chat(user_id: Annotated[int | None, Header()],
                       dto: CreateGroupChatRequest,
                       session: Session = Depends(session)):
     print(dto)
-    user = find_by_id(session, user_id)
-    members = list(map(lambda x: find_by_id(session, x), dto.member_ids))
-    chatroom = create_chatroom(session, members + [user], dto.name)
+    user = user_repository.find_by_id(session, user_id)
+    members = list(map(lambda x: user_repository.find_by_id(session, x), dto.member_ids))
+    chatroom = chatroom_repository.create_group_chat(session, members + [user], dto.name)
     return JSONResponse({"chatroom_id": chatroom.id, "redirect_url": "/chatrooms/" + str(chatroom.id)})
 
 
@@ -250,18 +242,18 @@ def create_group_chat(user_id: Annotated[int | None, Header()],
 def get_chats(user_id: Annotated[int | None, Header()],
               chatroom_id: Annotated[int | None, Path()],
               session: Session = Depends(session)):
-    user = find_by_id(session, user_id)
-    chatroom = find_chatroom_by_id(session, chatroom_id, user)
-    chats = find_chats_by_chatroom(session, chatroom)
+    user = user_repository.find_by_id(session, user_id)
+    chatroom = chatroom_repository.find_by_id(session, chatroom_id, user)
+    chats = chat_repository.find_chats_by_chatroom(session, chatroom)
     chat_list = []
     for chat in chats:
         chat_type = chat.chat_type()
         c = jsonable_encoder(chat)
         c["chat_type"] = chat_type
-        c['writer'] = find_by_id(session, c['writer_id'])
+        c['writer'] = user_repository.find_by_id(session, c['writer_id'])
 
         if chat_type == "image" or chat_type == "video":
-            image = find_image_by_id(session, c['image_id'])
+            image = image_repository.find_by_id(session, c['image_id'])
             c['image'] = jsonable_encoder(image)
 
         chat_list.append(c)
@@ -276,21 +268,21 @@ async def ws_connect(ws: WebSocket, session: Session = Depends(session)):
         while True:
             data = await ws.receive_json()
             chat_type = data["chat_type"]
-            writer = find_by_id(session, data["writer_id"])
-            chatroom = find_chatroom_by_id(session, data["chatroom_id"], writer)
+            writer = user_repository.find_by_id(session, data["writer_id"])
+            chatroom = chatroom_repository.find_by_id(session, data["chatroom_id"], writer)
 
             if chat_type == "text":
-                chat = jsonable_encoder(create_text_chat(session, chatroom, writer, data["text"]))
-                chat['writer'] = find_by_id(session, writer.id)
+                chat = jsonable_encoder(chat_repository.create_text_chat(session, chatroom, writer, data["text"]))
+                chat['writer'] = user_repository.find_by_id(session, writer.id)
                 chat['chat_type'] = 'text'
                 await manager.broadcast(jsonable_encoder(chat))
 
             elif chat_type == "image":
                 image_id = data['image_id']
-                image = find_image_by_id(session, image_id)
+                image = image_repository.find_by_id(session, image_id)
                 encoded_image = jsonable_encoder(image)
-                chat = jsonable_encoder(create_image_chat(session, chatroom, writer, image))
-                chat['writer'] = find_by_id(session, writer.id)
+                chat = jsonable_encoder(chat_repository.create_image_chat(session, chatroom, writer, image))
+                chat['writer'] = user_repository.find_by_id(session, writer.id)
                 chat['image'] = encoded_image
                 chat['chat_type'] = encoded_image["image_type"]
                 print(f'{chat=}')
@@ -305,7 +297,7 @@ async def ws_connect(ws: WebSocket, session: Session = Depends(session)):
 @app.post("/images")
 async def upload_image(file: UploadFile,
                        session: Session = Depends(session)):
-    image = await create_image(session, file, "./static")
+    image = await image_repository.create(session, file, "./static")
     return JSONResponse(jsonable_encoder(image))
 
 

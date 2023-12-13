@@ -4,7 +4,7 @@ from domain.chat_room import ChatRoom, ChatRoomMember
 from domain.user import User
 
 
-def create_chatroom(session: Session, members: list, name: str = "") -> ChatRoom:
+def create_group_chat(session: Session, members: list, name: str = "") -> ChatRoom:
     chatroom = ChatRoom(name=name)
     session.add(chatroom)
     for member in members:
@@ -15,12 +15,12 @@ def create_chatroom(session: Session, members: list, name: str = "") -> ChatRoom
     return chatroom
 
 
-def find_chatrooms_by_user(session: Session, user: User) -> list:
+def find_by_user(session: Session, user: User) -> list:
     chatroom_members = session.exec(select(ChatRoomMember).where(ChatRoomMember.member == user)).all()
     return list(map(lambda x: set_chatroom_name(x.chatroom, user), chatroom_members))
 
 
-def find_or_create_single_chatroom(session: Session, user: User, other: User) -> ChatRoom:
+def get_single_chat(session: Session, user: User, other: User) -> ChatRoom:
     chatrooms = list(session.exec(select(ChatRoom)).all())
     for chatroom in chatrooms:
         chatroom_members = list(map(lambda x: x.member, chatroom.members))
@@ -30,10 +30,10 @@ def find_or_create_single_chatroom(session: Session, user: User, other: User) ->
         if user in chatroom_members and other in chatroom_members:
             return chatroom
 
-    return create_chatroom(session, [user, other])
+    return create_group_chat(session, [user, other])
 
 
-def find_chatroom_by_id(session: Session, chatroom_id: int, user: User) -> ChatRoom:
+def find_by_id(session: Session, chatroom_id: int, user: User) -> ChatRoom:
     chatroom = session.exec(select(ChatRoom).where(ChatRoom.id == chatroom_id)).first()
     return set_chatroom_name(chatroom, user)
 

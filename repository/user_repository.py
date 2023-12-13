@@ -12,7 +12,7 @@ def exist_by_id(session: Session, login_id: str) -> bool:
     return session.exec(select(User).where(User.login_id == login_id)).first() is not None
 
 
-def create_user(session: Session, name: str, login_id: str, password: str) -> User:
+def create(session: Session, name: str, login_id: str, password: str) -> User:
     if exist_by_id(session, login_id):
         raise DuplicateUserException(login_id)
 
@@ -24,7 +24,7 @@ def create_user(session: Session, name: str, login_id: str, password: str) -> Us
     return user
 
 
-def login_user(session: Session, login_id: str, password: str) -> User:
+def login(session: Session, login_id: str, password: str) -> User:
     user = session.exec(select(User).where(User.login_id == login_id and User.password == password)).first()
     if not user:
         raise LoginException()

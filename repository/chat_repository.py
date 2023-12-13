@@ -34,6 +34,6 @@ def find_chats_by_chatroom(session: Session, chatroom: ChatRoom):
     return sorted(textchats + imagechats, key=lambda x: x.date_time())
 
 
-def find_recent_chat_by_chatroom(session: Session, chatroom: ChatRoom):
+def find_by_chatroom(session: Session, chatroom: ChatRoom):
     chats = find_chats_by_chatroom(session, chatroom)
     return chats[-1] if chats else None
