@@ -1,3 +1,5 @@
+let height = 0;
+
 $(document).ready(function () {
     let login_id;
     let chatroom_id;
@@ -21,7 +23,8 @@ $(document).ready(function () {
                 addVideoChat(login_id, chat);
             }
         });
-        scrollToTop();
+        height = scrollToTop(height);
+        console.log("height: " + height);
     });
 
     ws = new WebSocket("ws://localhost:8000/ws/connect");
@@ -37,6 +40,8 @@ $(document).ready(function () {
         } else if (chat_type === "video") {
             addVideoChat(login_id, json);
         }
+        height = scrollToTop(height);
+        console.log("height: " + height);
     };
 
     $('#input-text').on('keydown', function (event) {
@@ -100,8 +105,7 @@ $(document).ready(function () {
 
 function addTextChat(login_id, chat) {
     addTextChatUI(login_id, chat);
-    clearText($('#input-text'))
-    scrollToTop();
+    clearText($('#input-text'));
 }
 
 function addTextChatUI(login_id, chat) {
@@ -120,7 +124,6 @@ function addTextChatUI(login_id, chat) {
 
 function addImageChat(login_id, chat) {
     addImageChatUI(login_id, chat);
-    scrollToTop();
 }
 
 function addImageChatUI(login_id, chat) {
@@ -131,7 +134,7 @@ function addImageChatUI(login_id, chat) {
             <div class="chat-writer text-light">${chat.writer.name}</div>
             <div class="chat-row">
                 <div class="chat-image"><img src="http://localhost:8000/images/${chat["image"]["image_name"]}" width="${width / 100 * 60}" height="auto" 
-                onclick="window.open('http://localhost:8000/images/${chat["image"]["image_name"]}')"></div>
+                onclick="window.open('http://localhost:8000/images/${chat["image"]["image_name"]}')" onload="scrollToTop()"></div>
                 <div class="chat-time text-light">${parseTime(chat.time)}</div>
             </div>
         </div>
@@ -140,7 +143,6 @@ function addImageChatUI(login_id, chat) {
 
 function addVideoChat(login_id, chat) {
     addVideoChatUI(login_id, chat);
-    scrollToTop();
 }
 
 function addVideoChatUI(login_id, chat) {
@@ -152,7 +154,7 @@ function addVideoChatUI(login_id, chat) {
             <div class="chat-row">
                 <div class="chat-video">
                     <video class="video" src="http://localhost:8000/images/${chat["image"]["image_name"]}" width="${width / 100 * 60}" height="auto" muted autoplay
-                        onclick="window.open('http://localhost:8000/images/${chat["image"]["image_name"]}')"></video>
+                        onclick="window.open('http://localhost:8000/images/${chat["image"]["image_name"]}')" onload="scrollToTop()"></video>
                 </div>
                 <div class="chat-time text-light">${parseTime(chat.time)}</div>
             </div>
@@ -174,12 +176,18 @@ function clearText(ui) {
 
 function scrollToTop() {
     let ui = $('#chat-list');
-    ui.scrollTop(ui[0].scrollHeight);
+    let curHeight = ui[0].scrollHeight;
+    if (height !== curHeight) {
+        console.log("change from " + height + " to " + curHeight);
+        ui.scrollTop(curHeight);
+        height = curHeight;
+    }
+    return curHeight;
 }
 
 function parseTime(time) {
     let date = new Date(time);
-    console.log(date);
+    // console.log(date);
     let hour = date.getHours();
     let minute = date.getMinutes();
     let a = hour >= 12 ? "오후" : "오전";
