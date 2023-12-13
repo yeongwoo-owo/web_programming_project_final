@@ -29,6 +29,8 @@ def login(session: Session, login_id: str, password: str) -> User:
     if not user:
         raise LoginException()
 
+    if not user.session:
+        user.session = UserSession()
     user.session.session_id = str(uuid())
     session.add(user)
     session.commit()
