@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 from domain.friend_relation import FriendRelation
 from domain.user import User
 from domain.user_session import UserSession
-from exception.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
+from util.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
 
 
 def exist_by_id(session: Session, login_id: str) -> bool:

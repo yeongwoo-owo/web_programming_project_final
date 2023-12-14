@@ -14,9 +14,9 @@ from starlette.responses import JSONResponse, FileResponse
 from starlette.status import HTTP_201_CREATED
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
-from exception.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
+from util.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
 from repository import user_repository, chatroom_repository, chat_repository, image_repository
-from websocket.connection_manager import manager
+from util.connection_manager import manager
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static", html=True), name="static")
