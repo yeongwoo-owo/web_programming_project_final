@@ -8,8 +8,10 @@ from domain.image import Image
 
 
 async def create(session: Session, file: UploadFile, base_dir: str):
-    content = await file.read()
     image_path = base_dir + "/image"
+    create_dir(image_path)
+
+    content = await file.read()
     ext = parse_ext(file.content_type)
 
     image_name = str(uuid()) + ext
@@ -22,6 +24,14 @@ async def create(session: Session, file: UploadFile, base_dir: str):
     session.commit()
     session.refresh(image)
     return image
+
+
+def create_dir(path):
+    try:
+        if not os.path.exists(path):
+            os.makedirs(path)
+    except OSError:
+        print("폴더 생성 불가")
 
 
 def parse_ext(content_type):
