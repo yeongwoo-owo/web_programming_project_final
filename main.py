@@ -110,7 +110,6 @@ def login(login_id: str = Form(),
     user = user_repository.login(session, login_id, password)
     response = RedirectResponse(url="/", status_code=302)
     response.set_cookie(key="session_id", value=user.session.session_id)
-    print(user)
     return response
 
 

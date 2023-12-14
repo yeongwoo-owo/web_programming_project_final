@@ -1,11 +1,10 @@
 from typing import Optional
-from uuid import uuid4 as uuid
 
 from sqlmodel import SQLModel, Field, Relationship
 
 
 class UserSessionBase(SQLModel):
-    session_id: str = Field(default=str(uuid()))
+    session_id: str
     user_id: Optional[int] = Field(default=None, foreign_key="user.id")
 
 

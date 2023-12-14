@@ -17,7 +17,7 @@ def create(session: Session, name: str, login_id: str, password: str) -> User:
         raise DuplicateUserException(login_id)
 
     user = User(name=name, login_id=login_id, password=password)
-    user.session = UserSession()
+    user.session = UserSession(session_id=str(uuid()))
     session.add(user)
     session.commit()
     session.refresh(user)
@@ -30,8 +30,9 @@ def login(session: Session, login_id: str, password: str) -> User:
         raise LoginException()
 
     if not user.session:
-        user.session = UserSession()
-    user.session.session_id = str(uuid())
+        user.session = UserSession(session_id=str(uuid()))
+    else:
+        user.session.session_id = str(uuid())
     session.add(user)
     session.commit()
     session.refresh(user)
