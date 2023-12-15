@@ -14,6 +14,7 @@ from starlette.responses import JSONResponse, FileResponse
 from starlette.status import HTTP_201_CREATED
 from starlette.websockets import WebSocket, WebSocketDisconnect
 
+from repository.chatroom_repository import get_chatroom_name
 from util.user_exceptions import SessionNotFoundException, LoginException, DuplicateUserException
 from repository import user_repository, chatroom_repository, chat_repository, image_repository
 from util.connection_manager import manager
@@ -92,10 +93,8 @@ def register(name: str = Form(),
              login_id: str = Form(),
              password: str = Form(),
              session: Session = Depends(session)):
-    user = user_repository.create(session, name=name, login_id=login_id, password=password)
-    response = RedirectResponse(url="/", status_code=302)
-    response.set_cookie(key="session_id", value=user.session.session_id)
-    return response
+    user_repository.create(session, name=name, login_id=login_id, password=password)
+    return RedirectResponse(url="/login", status_code=302)
 
 
 @app.get("/login")
@@ -158,8 +157,9 @@ def get_chatrooms(request: Request,
     chatrooms = chatroom_repository.find_by_user(session, user)
     chatroom_list = []
     for chatroom in chatrooms:
-        recent_chat = chat_repository.find_by_chatroom(session, chatroom)
-        chatroom = jsonable_encoder(chatroom)
+        recent_chat = chat_repository.find_recent_chat(session, chatroom)
+        info = jsonable_encoder(chatroom)
+        info["name"] = get_chatroom_name(chatroom, user)
 
         if recent_chat:
             time = recent_chat.date_time()
@@ -171,13 +171,13 @@ def get_chatrooms(request: Request,
             if chat_type == "image":
                 chat["text"] = "사진"
             elif chat_type == "video":
-                chat["text"] = "비디오"
+                chat["text"] = "동영상"
 
-            chatroom["recent_chat"] = chat
+            info["recent_chat"] = chat
         else:
-            chatroom["recent_chat"] = None
+            info["recent_chat"] = None
 
-        chatroom_list.append(chatroom)
+        chatroom_list.append(info)
     print(chatroom_list)
     chatroom_list.sort(key=lambda x: -mktime(x["recent_chat"]["time"].timetuple()) if x["recent_chat"] else -1)
     return templates.TemplateResponse("chatroom_list.html",
@@ -198,8 +198,10 @@ def get_chatroom(request: Request,
                  chatroom_id: Annotated[int | None, Path()],
                  session: Session = Depends(session)):
     user = user_repository.find_by_id(session, user_id)
-    chatroom = chatroom_repository.find_by_id(session, chatroom_id, user)
-    return templates.TemplateResponse("chatroom.html", {"request": request, "chatroom": chatroom})
+    chatroom = chatroom_repository.find_by_id(session, chatroom_id)
+    info = jsonable_encoder(chatroom)
+    info["name"] = get_chatroom_name(chatroom, user)
+    return templates.TemplateResponse("chatroom.html", {"request": request, "chatroom": info})
 
 
 @app.get("/single-chats/{friend_id}")
@@ -233,7 +235,7 @@ def create_group_chat(user_id: Annotated[int | None, Header()],
     print(dto)
     user = user_repository.find_by_id(session, user_id)
     members = list(map(lambda x: user_repository.find_by_id(session, x), dto.member_ids))
-    chatroom = chatroom_repository.create_group_chat(session, members + [user], dto.name)
+    chatroom = chatroom_repository.create_chatroom(session, members + [user], dto.name)
     return JSONResponse({"chatroom_id": chatroom.id, "redirect_url": "/chatrooms/" + str(chatroom.id)})
 
 
@@ -242,7 +244,7 @@ def get_chats(user_id: Annotated[int | None, Header()],
               chatroom_id: Annotated[int | None, Path()],
               session: Session = Depends(session)):
     user = user_repository.find_by_id(session, user_id)
-    chatroom = chatroom_repository.find_by_id(session, chatroom_id, user)
+    chatroom = chatroom_repository.find_by_id(session, chatroom_id)
     chats = chat_repository.find_chats_by_chatroom(session, chatroom)
     chat_list = []
     for chat in chats:
@@ -256,7 +258,6 @@ def get_chats(user_id: Annotated[int | None, Header()],
             c['image'] = jsonable_encoder(image)
 
         chat_list.append(c)
-    print(chat_list)
     return JSONResponse({"login_user": user.id, "chatroom_id": chatroom.id, "chats": jsonable_encoder(chat_list)})
 
 
@@ -268,7 +269,7 @@ async def ws_connect(ws: WebSocket, session: Session = Depends(session)):
             data = await ws.receive_json()
             chat_type = data["chat_type"]
             writer = user_repository.find_by_id(session, data["writer_id"])
-            chatroom = chatroom_repository.find_by_id(session, data["chatroom_id"], writer)
+            chatroom = chatroom_repository.find_by_id(session, data["chatroom_id"])
 
             if chat_type == "text":
                 chat = jsonable_encoder(chat_repository.create_text_chat(session, chatroom, writer, data["text"]))

@@ -17,7 +17,6 @@ def create(session: Session, name: str, login_id: str, password: str) -> User:
         raise DuplicateUserException(login_id)
 
     user = User(name=name, login_id=login_id, password=password)
-    user.session = UserSession(session_id=str(uuid()))
     session.add(user)
     session.commit()
     session.refresh(user)
@@ -54,7 +53,7 @@ def find_by_session_id(session: Session, session_id: str) -> User:
     return user_session.user
 
 
-def add_friend_relation(session: Session, user: User, friend: User) -> object:
+def add_friend_relation(session: Session, user: User, friend: User):
     session.add(FriendRelation(user=user, friend=friend))
     session.commit()
 
